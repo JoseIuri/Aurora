@@ -1,0 +1,5 @@
+#!/bin/bash
+for i in `seq 1 1024`;
+do
+        echo | printf '%08x\n' $(( RANDOM << 15 | (RANDOM & 3) << 30 | RANDOM )) >> dataMemo.txt
+done    
