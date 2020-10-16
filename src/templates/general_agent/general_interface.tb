@@ -1,0 +1,10 @@
+interface |-AGENT-|_interface (input |-CLOCK-|, |-RESET-|);
+
+    |-SIGNAL_NAME-|
+
+    // modport port(
+    // input   |-CLOCK-|,
+    // input   |-RESET-|,
+    // |-SIGNAL_NAME_PORT-|);
+
+endinterface

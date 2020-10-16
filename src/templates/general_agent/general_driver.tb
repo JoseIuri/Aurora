@@ -1,0 +1,63 @@
+class |-AGENT-|_driver extends uvm_driver #(|-AGENT-|_transaction);
+
+    |-AGENT-|_transaction req;
+    string                tID;
+
+    `uvm_component_utils_begin(|-AGENT-|_driver)
+    `uvm_component_utils_end
+
+    // Attributes
+    virtual |-AGENT-|_interface vif;
+
+    // Methods
+    extern function new (string name="|-AGENT-|_driver", uvm_component parent=null);
+    extern function void build_phase(uvm_phase phase);
+    extern task run_phase (uvm_phase phase);
+    extern task DriveItem(|-AGENT-|_transaction item);
+
+endclass : |-AGENT-|_driver
+
+
+function |-AGENT-|_driver::new(string name="|-AGENT-|_driver", uvm_component parent=null);
+    super.new(name, parent);
+    this.tID = get_type_name().toupper();
+endfunction : new
+
+//------------------------------------------------------------------------------
+// Build
+//
+function void |-AGENT-|_driver::build_phase(uvm_phase phase);
+    super.build_phase(phase);
+    `uvm_info(tID, $sformatf("build_phase begin ..."), UVM_HIGH)
+
+    // Get virtual interface from uvm_config_db
+    if (!uvm_config_db#(virtual |-AGENT-|_interface)::get(this, "", "|-AGENT-|_vif", this.vif)) begin
+        `uvm_fatal("NOVIF", {"virtual interface must be set for: ", get_full_name(), ".vif"})
+    end
+endfunction : build_phase
+
+//------------------------------------------------------------------------------
+// Get and process items
+//
+task |-AGENT-|_driver::run_phase(uvm_phase phase);
+    // INIT BLOCK
+    forever begin
+        // Get the next data item from sequencer
+        seq_item_port.get_next_item(req);
+        phase.raise_objection(this);
+        // Execute the item
+        this.DriveItem(req);
+        seq_item_port.item_done();
+        phase.drop_objection(this);
+    end
+endtask : run_phase
+
+//------------------------------------------------------------------------------
+// Drive sequence item
+//
+task |-AGENT-|_driver::DriveItem(|-AGENT-|_transaction item);
+    // Add your logic here
+
+    |-DRIVER_POLICY-|
+
+endtask : DriveItem

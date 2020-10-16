@@ -1,0 +1,15 @@
+class |-AGENT-|_sequence extends uvm_sequence #(|-AGENT-|_transaction);
+`uvm_object_utils(|-AGENT-|_sequence)
+
+function new(string name="|-AGENT-|_sequence");
+    super.new(name);
+endfunction: new
+
+task body;
+    |-AGENT-|_transaction tr;
+    tr = |-AGENT-|_transaction::type_id::create("tr");
+    start_item(tr);
+        assert(tr.randomize());
+    finish_item(tr);
+endtask: body
+endclass

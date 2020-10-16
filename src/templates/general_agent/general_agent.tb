@@ -1,0 +1,101 @@
+class |-AGENT-|_agentConfig extends uvm_object;
+
+    // UVM Factory Registration Macro
+    //
+    `uvm_object_utils(|-AGENT-|_agentConfig)
+
+    //------------------------------------------
+    // Data Members
+    //------------------------------------------
+
+    // include the functional coverage or not
+    bit hasCoverage = 0;
+
+    // active or passive
+    bit isActive = 1;
+
+    //------------------------------------------
+    // Methods
+    //------------------------------------------
+
+    function new(string name = "|-AGENT-|_agentConfig");
+        super.new(name);
+    endfunction
+
+endclass:|-AGENT-|_agentConfig
+
+class |-AGENT-|_agent extends uvm_agent;
+
+    //------------------------------------------
+    // Data Members
+    //------------------------------------------
+    |-AGENT-|_agentConfig cfg;
+
+    static string MSGID = "|-AGENT-|__agent";
+
+    `uvm_component_utils(|-AGENT-|_agent)
+
+    //------------------------------------------
+    // Component Members
+    //------------------------------------------
+    uvm_analysis_port #(|-AGENT-|_transaction)   ap;
+
+    |-AGENT-|_sequencer #(|-AGENT-|_transaction)   sqr;
+    |-AGENT-|_monitor                        mon;
+    |-AGENT-|_driver                         drv;
+    |-AGENT-|_coverage                       cov;
+
+    //------------------------------------------
+    // Methods
+    //------------------------------------------
+    // Standard Methods
+    extern function new (string name = "|-AGENT-|_agent", uvm_component parent = null);
+    extern function void build_phase (uvm_phase phase);
+    extern function void connect_phase (uvm_phase phase);
+
+endclass: |-AGENT-|_agent
+
+////////////////////////////////////////////////////////////////////////////////
+// Implementation
+//------------------------------------------------------------------------------
+// Constructor
+function |-AGENT-|_agent::new (string name = "|-AGENT-|_agent", uvm_component parent = null);
+    super.new(name, parent);
+
+    this.cfg = new();
+endfunction
+
+//------------------------------------------------------------------------------
+// Construct sub-components
+// retrieve and set sub-component configuration
+//
+function void |-AGENT-|_agent::build_phase (uvm_phase phase);
+    super.build_phase(phase);
+    if(!uvm_config_db #(|-AGENT-|_agentConfig)::get(this, "|-AGENT-|_agentConfig", cfg))begin
+        `uvm_error({MSGID,"Failed to get agent's config object: |-AGENT-|_agentConfig"})
+    end
+    // Monitor is always present
+    mon = |-AGENT-|_Monitor::type_id::create("mon", this);
+    // Only build the driver and sequencer if active
+    if(cfg.isActive == UVM_ACTIVE)begin
+        sqr = |-AGENT-|_sequencer#(|-AGENT-|_transaction)::type_id::create("sqr", this);
+        drv    = |-AGENT-|_driver::type_id::create("drv", this);
+    end
+    if(cfg.hasCoverage)begin
+        cov = |-AGENT-|_coverage::type_id::create("cov", this);
+    end
+endfunction: build_phase
+
+//------------------------------------------------------------------------------
+// Connect sub-components
+//
+function void |-AGENT-|_agent::connect_phase (uvm_phase phase);
+    mon.analysis_port.connect(ap);
+    // Only connect the driver and the sequencer if active
+    if(cfg.isActive == UVM_ACTIVE)
+        drv.seq_item_port.connect(sqr.seq_item_export);
+    end
+    if(cfg.hasCoverage) begin
+        mon.analysis_port.connect(m_coverage.analysis_export);
+    end
+endfunction: connect_phase
