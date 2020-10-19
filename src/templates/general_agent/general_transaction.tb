@@ -1,16 +1,16 @@
-class |-AGENT-|_transaction extends uvm_sequence_item;
+class |-TRANSACTION-| extends uvm_sequence_item;
 
-    |-TYPE-| |-FIELD_NAME-|;
+    |-FIELD_NAME-|
 
-    `uvm_object_utils_begin(|-AGENT-|_transaction)
-        `uvm_field_int(|-FIELD_NAME-|, UVM_ALL_ON|UVM_HEX)
+    `uvm_object_utils_begin(|-TRANSACTION-|)
+        |-FIELD_MACRO-|
     `uvm_object_utils_end
 
-    function new(string name="|-AGENT-|_transaction");
+    function new(string name="|-TRANSACTION-|");
         super.new(name);
     endfunction: new
 
     function string convert2string();
-        return $sformatf("{{ |-FIELD_NAME-| = %h,}}", |-FIELD_NAME-|,);
+        return $sformatf("{{ |-FIELD_NAME_S-| = %h,}}", |-FIELD_NAME_S-|,);
     endfunction
-endclass: |-AGENT-|_transaction
+endclass: |-TRANSACTION-|

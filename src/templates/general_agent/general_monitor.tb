@@ -1,23 +1,22 @@
-class {:AGENT:}_monitor extends uvm_monitor;
+class |-AGENT-|_monitor extends uvm_monitor;
 
     // Attributes
-    virtual {:AGENT:}_interfacef vif;
-    uvm_analysis_port #({:AGENT:}_transaction) ap;
+    virtual |-AGENT-|_interface vif;
+    uvm_analysis_port #(|-TRANSACTION-|) req;
+    uvm_analysis_port #(|-TRANSACTION-|) resp;
     string                              tID;
 
-    protected {:AGENT:}_transaction transCollected;
+    protected |-TRANSACTION-| transCollected;
 
-    `uvm_component_utils_begin({:AGENT:}_monitor)
+    `uvm_component_utils_begin(|-AGENT-|_monitor)
     `uvm_component_utils_end
 
     ////////////////////////////////////////////////////////////////////////////////
     // Implementation
     //------------------------------------------------------------------------------
-    function new(string name="{:AGENT:}_monitor", uvm_component parent=null);
+    function new(string name="|-AGENT-|_monitor", uvm_component parent=null);
         super.new(name, parent);
-        this.covTrans = new();
-        this.covTrans.set_inst_name({get_full_name(), ".covTrans"});
-        this.transCollected = {:AGENT:}_transaction::type_id::create("transCollected");
+        this.transCollected = |-TRANSACTION-|::type_id::create("transCollected");
 
         this.tID = get_type_name().toupper();
         this.ap = new("ap", this);
@@ -26,7 +25,7 @@ class {:AGENT:}_monitor extends uvm_monitor;
     function build_phase(uvm_phase phase);
         super.build_phase(phase);
         `uvm_info(tID, $sformatf("build_phase begin ..."), UVM_HIGH)
-        if (!(uvm_config_db#(virtual {:AGENT:}_interfacef)::get(this, "", "{:AGENT:}_vif", vif))) begin
+        if (!(uvm_config_db#(virtual |-AGENT-|_interface)::get(this, "", "|-AGENT-|_vif", vif))) begin
             `uvm_fatal("NOVIF", {"virtual interface must be set for: ", get_full_name(), ".vif"})
         end
 
@@ -37,15 +36,14 @@ class {:AGENT:}_monitor extends uvm_monitor;
     endtask: run_phase
 
     task CollectTransactions(uvm_phase phase);
-        {:AGENT:}_transaction transCollectedClone;
 
         forever begin
             phase.raise_objection(this);
 
             this.BusToTransaction();
-            $cast(transCollectedClone, this.transCollected.clone());
 
-            this.ap.write(transCollectedClone);
+            this.req.write(transCollected);
+            this.resp.write(transCollected);
 
             phase.drop_objection(this);
         end
@@ -55,4 +53,4 @@ class {:AGENT:}_monitor extends uvm_monitor;
         |-MONITOR_POLICY-|
     endfunction : BusToTransaction
 
-endclass: {:AGENT:}_monitor
+endclass: |-AGENT-|_monitor

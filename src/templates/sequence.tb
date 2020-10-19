@@ -1,0 +1,15 @@
+class |-SEQUENCE-|_sequence extends uvm_sequence #(|-TRANSACTION-|);
+    `uvm_object_utils(|-SEQUENCE-|_sequence)
+
+    function new(string name="|-SEQUENCE-|_sequence");
+        super.new(name);
+    endfunction: new
+
+    task body;
+        |-SEQUENCE-| tr;
+        tr = |-TRANSACTION-|::type_id::create("tr");
+        start_item(tr);
+            assert(tr.randomize());
+        finish_item(tr);
+    endtask: body
+endclass

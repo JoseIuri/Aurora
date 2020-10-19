@@ -1,6 +1,6 @@
-class |-AGENT-|_driver extends uvm_driver #(|-AGENT-|_transaction);
+class |-AGENT-|_driver extends uvm_driver #(|-TRANSACTION-|);
 
-    |-AGENT-|_transaction req;
+    |-TRANSACTION-| req;
     string                tID;
 
     `uvm_component_utils_begin(|-AGENT-|_driver)
@@ -13,7 +13,7 @@ class |-AGENT-|_driver extends uvm_driver #(|-AGENT-|_transaction);
     extern function new (string name="|-AGENT-|_driver", uvm_component parent=null);
     extern function void build_phase(uvm_phase phase);
     extern task run_phase (uvm_phase phase);
-    extern task DriveItem(|-AGENT-|_transaction item);
+    extern task DriveItem(|-TRANSACTION-| item);
 
 endclass : |-AGENT-|_driver
 
@@ -55,7 +55,7 @@ endtask : run_phase
 //------------------------------------------------------------------------------
 // Drive sequence item
 //
-task |-AGENT-|_driver::DriveItem(|-AGENT-|_transaction item);
+task |-AGENT-|_driver::DriveItem(|-TRANSACTION-| item);
     // Add your logic here
 
     |-DRIVER_POLICY-|

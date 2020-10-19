@@ -38,12 +38,13 @@ class |-AGENT-|_agent extends uvm_agent;
     //------------------------------------------
     // Component Members
     //------------------------------------------
-    uvm_analysis_port #(|-AGENT-|_transaction)   ap;
+    uvm_analysis_port #(|-TRANSACTION-|) ap_req;
+    uvm_analysis_port #(|-TRANSACTION-|) ap_resp;
 
-    |-AGENT-|_sequencer #(|-AGENT-|_transaction)   sqr;
-    |-AGENT-|_monitor                        mon;
-    |-AGENT-|_driver                         drv;
-    |-AGENT-|_coverage                       cov;
+    uvm_sequencer#(|-TRANSACTION-|) sqr;
+    |-AGENT-|_monitor mon;
+    |-AGENT-|_driver drv;
+    |-AGENT-|_coverage cov;
 
     //------------------------------------------
     // Methods
@@ -62,6 +63,9 @@ endclass: |-AGENT-|_agent
 function |-AGENT-|_agent::new (string name = "|-AGENT-|_agent", uvm_component parent = null);
     super.new(name, parent);
 
+    ap_req = new("ap_req", this);
+    ap_resp = new("ap_resp", this);
+
     this.cfg = new();
 endfunction
 
@@ -78,8 +82,8 @@ function void |-AGENT-|_agent::build_phase (uvm_phase phase);
     mon = |-AGENT-|_Monitor::type_id::create("mon", this);
     // Only build the driver and sequencer if active
     if(cfg.isActive == UVM_ACTIVE)begin
-        sqr = |-AGENT-|_sequencer#(|-AGENT-|_transaction)::type_id::create("sqr", this);
-        drv    = |-AGENT-|_driver::type_id::create("drv", this);
+        sqr = uvm_sequencer#(|-TRANSACTION-|)::type_id::create("sqr", this);
+        drv = |-AGENT-|_driver::type_id::create("drv", this);
     end
     if(cfg.hasCoverage)begin
         cov = |-AGENT-|_coverage::type_id::create("cov", this);
@@ -90,12 +94,13 @@ endfunction: build_phase
 // Connect sub-components
 //
 function void |-AGENT-|_agent::connect_phase (uvm_phase phase);
-    mon.analysis_port.connect(ap);
+    mon.req.connect(ap_req);
+    mon.resp.connect(ap_resp);
     // Only connect the driver and the sequencer if active
     if(cfg.isActive == UVM_ACTIVE)
         drv.seq_item_port.connect(sqr.seq_item_export);
     end
     if(cfg.hasCoverage) begin
-        mon.analysis_port.connect(m_coverage.analysis_export);
+        mon.ap.connect(m_coverage.collected_port);
     end
 endfunction: connect_phase

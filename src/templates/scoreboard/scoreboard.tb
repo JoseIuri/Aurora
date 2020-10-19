@@ -1,0 +1,23 @@
+class |-SCOREBOARD-|_scoreboard extends uvm_scoreboard;
+
+  |-REFMOD-|
+  |-COMP-|
+  |-PORTS-|
+  `uvm_component_utils(|-SCOREBOARD-|_scoreboard)
+
+  function new(string name = "scoreboard", uvm_component parent = null);
+    super.new(name, parent);
+    |-PORTS_CREATION-|
+  endfunction:new
+
+  virtual function void build_phase(uvm_phase phase);
+    super.build_phase(phase);
+    |-REFMOD_CREATION-|
+    |-COMPARATOR_CREATION-|
+  endfunction
+
+  virtual function void connect_phase(uvm_phase phase);
+    super.connect_phase(phase);
+    |-CONNECTIONS-|
+  endfunction
+endclass:|-SCOREBOARD-|_scoreboard

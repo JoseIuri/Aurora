@@ -1,0 +1,32 @@
+class |-AGENT-|_coverage extends uvm_component;
+
+  `uvm_component_utils(|-AGENT-|_coverage)
+
+  |-TRANSACTION-| tr;
+
+  uvm_analysis_imp#(|-TRANSACTION-|, |-AGENT-|_coverage) collected_port;
+
+  function new(string name = "|-AGENT-|_coverage", uvm_component parent= null);
+    super.new(name, parent);
+    collected_port = new("collected_port", this);
+    tr=new;
+  endfunction
+
+  function void build_phase(uvm_phase phase);
+    super.build_phase (phase);
+  endfunction
+
+  protected uvm_phase running_phase;
+  task run_phase(uvm_phase phase);
+    running_phase = phase;
+    running_phase.raise_objection(this);
+    running_phase.raise_objection(this);
+  endtask: run_phase
+
+
+  function void write(|-TRANSACTION-| t);
+    tr.copy(t);
+    transa = transa + 1;
+
+  endfunction: write
+endclass : |-AGENT-|_coverage
