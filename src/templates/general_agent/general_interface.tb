@@ -1,4 +1,4 @@
-interface |-AGENT-|_interface (input |-CLOCK-|, |-RESET-|);
+interface |-INTERFACE-| (input |-CLOCK-|, |-RESET-|);
 
     |-SIGNAL_NAME-|
 

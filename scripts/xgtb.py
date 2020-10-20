@@ -14,11 +14,25 @@ import sys
 from colorama import Fore
 import pathlib as path
 
+class Clock:
+    def __init__(self, name, period):
+        self.name = name
+        self.period = period
+
+class Reset:
+    def __init__(self, name, period, duration):
+        self.name = name
+        self.period = period
+        self.duration = duration
+
 class Signal:
     def __init__(self, name, type, io):
         self.name = name
         self.type = type
         self.io = io
+    
+    def addConnection (self, connect):
+        self.connect = connect
 
 class Field:
     def __init__(self, name , type):
@@ -26,8 +40,9 @@ class Field:
         self.type = type
 
 class Interface:
-    def __init__(self, name, signal, clock, reset):
-        self.name = name
+    def __init__(self, name, instance, signal, clock, reset):
+        self.name = name + '_interface'
+        self.instance = instance
         self.signal = [signal]
         self.clock = clock
         self.reset = reset
@@ -82,9 +97,9 @@ class Agent:
             with open('../src/templates/general_agent/general_interface.tb', 'r') as file:
                 tbInterface=file.read()
 
-            tbInterface = tbInterface.replace('|-AGENT-|', self.interface.name)
+            tbInterface = tbInterface.replace('|-INTERFACE-|', self.interface.name)
 
-            tbInterface = tbInterface.replace('|-CLOCK-|', self.interface.clock)
+            tbInterface = tbInterface.replace('|-CLOCK-|', self.interface.clock,name)
 
             tbInterface = tbInterface.replace('|-RESET-|', self.interface.reset)
 
@@ -96,7 +111,7 @@ class Agent:
             # Cleaning residual tags
             tbInterface = tbInterface.replace('|-SIGNAL_NAME-|', '')
 
-            interface_file = open( self.name + "_interface.sv", "wt")
+            interface_file = open( self.name + ".sv", "wt")
             n = interface_file.write(tbInterface)
             interface_file.close()
 
@@ -145,6 +160,8 @@ class Agent:
 
             tbDriver = tbDriver.replace('|-AGENT-|', self.name)
             tbDriver = tbDriver.replace('|-TRANSACTION-|', self.transaction.name)
+            tbDriver = tbDriver.replace('|-INTERFACE-|', self.interface.name)
+            tbDriver = tbDriver.replace('|-INTERFACE_INSTANCE-|', self.interface.instance)
 
             tbDriver = tbDriver.replace('|-DRIVER_POLICY-|', self.driver_policy.replace('\n','\n\t'))
 
@@ -158,6 +175,8 @@ class Agent:
 
             tbMonitor = tbMonitor.replace('|-AGENT-|', self.name)
             tbMonitor = tbMonitor.replace('|-TRANSACTION-|', self.transaction.name)
+            tbMonitor = tbMonitor.replace('|-INTERFACE-|', self.interface.name)
+            tbMonitor = tbMonitor.replace('|-INTERFACE_INSTANCE-|', self.interface.instance)
 
             tbMonitor = tbMonitor.replace('|-MONITOR_POLICY-|', self.monitor_policy.replace('\n','\n\t\t'))
 
@@ -477,6 +496,126 @@ class Test:
         n = test_file.write(tbTest)
         test_file.close()
 
+class Module:
+    def __init__(self, name):
+        self.name = name
+        self.clock = []
+        self.reset = []
+        self.signal = []
+        self.interface = []
+        self.env = []
+    
+    def addSignal(self, signal):
+        self.signal.append(signal)
+
+    def addInterface(self, interface):
+        self.interface.append(interface)
+
+    def addClock(self, clock):
+        self.clock.append(clock)
+    
+    def addReset(self, reset):
+        self.reset.append(reset)
+    
+    def addEnv(self, env):
+        self.env.append(env)
+
+    def writeWrapper(self):
+        with open('../src/templates/wrapper.tb', 'r') as file:
+            tbWrapper=file.read()
+        
+        tbWrapper = tbWrapper.replace('|-MODULE-|', self.name)
+
+        for idx,uInterface in enumerate(self.interface):
+            tbWrapper = tbWrapper.replace('|-INTERFACE-|', uInterface.name + ' ' + uInterface.instance + '_if' +',\n\t|-INTERFACE-|')
+
+        for idx,uClock in enumerate(self.clock):
+            tbWrapper = tbWrapper.replace('|-INTERFACE-|', 'input ' + uClock.name +',\n\t|-INTERFACE-|')
+
+        for idx,uReset in enumerate(self.reset):
+            tbWrapper = tbWrapper.replace('|-INTERFACE-|', 'input ' + uReset.name +',\n\t|-INTERFACE-|')
+
+        for idx,uInterface in enumerate(self.interface):
+            for idy,busSig in enumerate(uInterface.signal):
+                if busSig.connect[0] == '':
+                    tbWrapper = tbWrapper.replace('|-CONNECTIONS-|', '.'+ busSig.name + '(' + uInterface.instance + '_if.' + busSig.name +') ' +',\n\t\t|-INTERFACE-|')
+                else:
+                    tbWrapper = tbWrapper.replace('|-CONNECTIONS-|', '.'+ busSig.connect + '(' + uInterface.instance + '_if.' + busSig.name +')' + ',\n\t\t|-CONNECTIONS-|')
+
+        for idx,uClock in enumerate(self.clock):
+            tbWrapper = tbWrapper.replace('|-CONNECTIONS-|', '.' + uClock.name + '(' + uClock.name + ')' +',\n\t\t|-CONNECTIONS-|')
+
+        for idx,uReset in enumerate(self.reset):
+            tbWrapper = tbWrapper.replace('|-CONNECTIONS-|', '.' + uReset.name + '(' + uReset.name + ')' +',\n\t\t|-CONNECTIONS-|')
+
+        #CLEANUP
+        tbWrapper = tbWrapper.replace(',\n\t|-INTERFACE-|','')
+        tbWrapper = tbWrapper.replace(',\n\t\t|-CONNECTIONS-|','')
+
+        wrapper_file = open( self.name + "_wrapper.sv", "wt")
+        n = wrapper_file.write(tbWrapper)
+        wrapper_file.close()
+
+    def writeTop(self):
+        with open('../src/templates/top.tb', 'r') as file:
+            tbTop=file.read()
+
+        tbTop = tbTop.replace('|-PACKAGE-|', self.name)
+        tbTop = tbTop.replace('|-MODULE_NAME-|', self.name)
+
+        for idx,uClock in enumerate(self.clock):
+            tbTop = tbTop.replace('|-CLOCK-|', 'logic ' + uClock.name +';\n\t|-CLOCK-|')
+            tbTop = tbTop.replace('|-CLOCK_PERIOD-|', 'localparam P_' + uClock.name.upper() + ' = ' + str(uClock.period) +'ns;\n\t|-CLOCK_PERIOD-|')
+            tbTop = tbTop.replace('|-CLOCK_CH-|', 'always #(P_' + uClock.name.upper() + '/2) ~' + uClock.name +';\n\t|-CLOCK_CH-|')
+        
+        for idx,uReset in enumerate(self.reset):
+            tbTop = tbTop.replace('|-RESET-|', 'logic ' + uReset.name +';\n\t\t|-RESET-|')
+            tbTop = tbTop.replace('|-RESET_PERIOD-|', 'localparam P_' + uReset.name.upper() + ' = ' + str(uReset.period) + 'ns;\n\t|-RESET_PERIOD-|')
+            tbTop = tbTop.replace('|-RESET_CH-|', 'always \n\t\t#(P_' + uReset.name.upper() + ') ' + uReset.name +' = 0; '+ '\n\t\t#(' + str(uReset.duration) + ') = 1;' +'\n\t|-RESET_CH-|')
+
+        for idx, uInterface in enumerate(self.interface):
+            tbTop = tbTop.replace('|-INTERFACE-|', uInterface.name + ' ' + uInterface.instance + '_if_top (\n\t\t.' \
+            + uInterface.clock.name + '(' + uInterface.clock.name + '), .' + \
+            uInterface.reset.name + '(' + uInterface.reset.name + ')\n\t);'+ '\n\t\t|-INTERFACE-|')
+            tbTop = tbTop.replace('|-INTERFACE_CONNECTION-|', '.' + uInterface.instance + '_if_top (' + uInterface.instance + '_if)' +',\n\t\t|-INTERFACE_CONNECTION-|')
+        
+        for idx, uClock in enumerate(self.clock):
+            tbTop = tbTop.replace('|-INTERFACE_CONNECTION-|', '.' + uClock.name + '.(' + uClock.name + ')' +',\n\t\t|-INTERFACE_CONNECTION-|')
+            tbTop = tbTop.replace('|-INITIAL_CLOCK-|', uClock.name + ' = 0;' +'\n\t\t|-INITIAL_CLOCK-|')
+
+        for idx, uReset in enumerate(self.reset):
+            tbTop = tbTop.replace('|-INTERFACE_CONNECTION-|', '.' + uReset.name + '.(' + uReset.name + ')' +',\n\t\t|-INTERFACE_CONNECTION-|')
+            tbTop = tbTop.replace('|-INITIAL_RESET-|', uReset.name + ' = 1;' +'\n\t\t|-INITIAL_RESET-|')
+
+        for idx, uInterface in enumerate(self.interface):
+            tbTop = tbTop.replace('|-INTERFACE_CDB-|', \
+                        'uvm_config_db#(virtual ' + uInterface.name + ')::set(uvm_root::get(), "*", "' \
+                         + uInterface.instance + '_vif", ' \
+                         + uInterface.instance + '_if_top)' +';\n\t\t|-INTERFACE_CDB-|')
+        
+
+
+        #CLEANUP
+        tbTop = tbTop.replace('|-CLOCK-|', '')
+        tbTop = tbTop.replace('|-RESET-|', '')
+        tbTop = tbTop.replace('|-CLOCK_PERIOD-|', '')
+        tbTop = tbTop.replace('|-RESET_PERIOD-|', '')
+        tbTop = tbTop.replace('|-INITIAL_RESET-|', '')
+        tbTop = tbTop.replace('|-INITIAL_CLOCK-|', '')
+        tbTop = tbTop.replace('|-CLOCK_CH-|', '')
+        tbTop = tbTop.replace('|-RESET_CH-|', 'end')
+        tbTop = tbTop.replace('|-INTERFACE-|', '')
+        tbTop = tbTop.replace(',\n\t\t|-INTERFACE_CONNECTION-|', '')
+        tbTop = tbTop.replace('|-INTERFACE_CDB-|', '')
+        tbTop = tbTop.replace('\n\n', '\n')
+
+
+        top_file = open( self.name + "_top.sv", "wt")
+        n = top_file.write(tbTop)
+        top_file.close()
+
+
+
 def display_title_bar():
 
     # Clears the terminal screen, and displays a title bar.
@@ -512,7 +651,13 @@ def main():
     uSignal1 = Signal('in_data', 'logic [8]', 'input')
     uSignal_add = Signal('out_data', 'logic [8]', 'output')
 
-    uInterface = Interface('agentDummy', uSignal1, 'clock', 'reset')
+    uSignal1.addConnection('in_data')
+    uSignal_add.addConnection('out_data') 
+
+    clock = Clock('clock', 90)
+    reset = Reset('reset', 3e12, 180)
+
+    uInterface = Interface('agentDummy', 'agtDummy' , uSignal1, clock, reset)
 
     uInterface.addSignal(signal=uSignal_add)
 
@@ -556,5 +701,21 @@ def main():
 
     sequence.writeSequence()
     test.writeTest()
+
+    dummyDut = Module('dummyDut')
+
+    dummyDut.addClock(clock)
+    dummyDut.addReset(reset)
+    dummyDut.addInterface(uInterface)
+    dummyDut.addSignal(uSignal1)
+    dummyDut.addSignal(uSignal_add)
+    dummyDut.addEnv(env)
+
+    dummyDut.writeWrapper()
+    dummyDut.writeTop()
+
+
+
+
 if __name__== "__main__" :
     main()
