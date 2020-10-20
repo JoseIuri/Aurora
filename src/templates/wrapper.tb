@@ -1,0 +1,10 @@
+module |-MODULE-|_wrapper (
+    |-INTERFACE-|
+    );
+
+    |-MODULE-| |-MODULE-|_instance (
+        |-CONNECTIONS-|
+    );
+
+
+endmodule
