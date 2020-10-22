@@ -1,0 +1,16 @@
+class |-TRANSACTION-| extends uvm_sequence_item;
+
+    |-FIELD_NAME-|
+
+    `uvm_object_utils_begin(|-TRANSACTION-|)
+        |-FIELD_MACRO-|
+    `uvm_object_utils_end
+
+    function new(string name="|-TRANSACTION-|");
+        super.new(name);
+    endfunction: new
+
+    function string convert2string();
+        return $sformatf("{{ |-FIELD_NAME_S-| = %h,}}", |-FIELD_NAME_S-|,);
+    endfunction
+endclass: |-TRANSACTION-|

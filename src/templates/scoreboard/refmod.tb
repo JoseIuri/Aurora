@@ -1,0 +1,33 @@
+class |-REFMOD-| extends uvm_component;
+    `uvm_component_utils(|-REFMOD-|_refmod)
+
+    |-INPUT_TRANSA-|
+    |-OUTPUT_TRANSA-|
+    |-INPUT_PORT-|
+    |-OUTPUT_PORT-|
+
+    function new(string name = "|-REFMOD-|_refmod", uvm_component parent);
+        super.new(name, parent);
+        |-PORT_CREATION-|
+    endfunction
+
+    virtual function void build_phase(uvm_phase phase);
+        super.build_phase(phase);
+        |-TRANSA_CREATION-|
+    endfunction: build_phase
+
+    virtual task run_phase(uvm_phase phase);
+        super.run_phase(phase);
+        forever begin
+            refmod_task()
+        end
+    endtask: run_phase
+
+    task refmod_task();
+        // Add your logic here
+
+        |-REFMOD_POLICY-|
+
+    endtask : refmod_task
+
+endclass: |-REFMOD-|

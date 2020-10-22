@@ -1,0 +1,21 @@
+class |-TEST-| extends uvm_test;
+    |-ENV-|
+    |-SEQUENCE-|
+
+    `uvm_component_utils(|-TEST-|)
+
+    function new(string name, uvm_component parent = null);
+        super.new(name, parent);
+    endfunction
+
+    virtual function void build_phase(uvm_phase phase);
+        super.build_phase(phase);
+        |-ENV_CREATION-|
+        |-SEQUENCE_CREATION-|
+    endfunction
+
+    task run_phase(uvm_phase phase);
+        |-SEQUENCE_START-|
+    endtask: run_phase
+
+endclass:|-TEST-|
