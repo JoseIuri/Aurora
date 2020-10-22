@@ -101,6 +101,6 @@ function void |-AGENT-|_agent::connect_phase (uvm_phase phase);
         drv.seq_item_port.connect(sqr.seq_item_export);
     end
     if(cfg.hasCoverage) begin
-        mon.ap.connect(m_coverage.collected_port);
+        mon.ap_req.connect(m_coverage.collected_port);
     end
 endfunction: connect_phase

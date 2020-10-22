@@ -28,6 +28,6 @@ class |-REFMOD-| extends uvm_component;
 
         |-REFMOD_POLICY-|
 
-    endtask : DriveItem
+    endtask : refmod_task
 
 endclass: |-REFMOD-|

@@ -40,10 +40,10 @@ class Field:
         self.type = type
 
 class Interface:
-    def __init__(self, name, instance, signal, clock, reset):
+    def __init__(self, name, instance, clock, reset):
         self.name = name + '_interface'
         self.instance = instance
-        self.signal = [signal]
+        self.signal = []
         self.clock = clock
         self.reset = reset
 
@@ -52,15 +52,15 @@ class Interface:
 
 
 class Transaction:
-    def __init__(self, name, field):
+    def __init__(self, name):
         self.name = name + '_transaction'
-        self.field = [field]
+        self.field = []
 
     def addField(self, field):
         self.field.append(field)
 
 class Agent:
-        def __init__(self, name, instance, interface, transaction, driver_policy, monitor_policy, type, refmod, comp):
+        def __init__(self, name, instance, interface, transaction, driver_policy, monitor_policy, type):
             self.name = name
             self.instance = instance
             self.interface = interface
@@ -68,8 +68,8 @@ class Agent:
             self.driver_policy = driver_policy
             self.monitor_policy = monitor_policy
             self.type = type
-            self.refmod = refmod
-            self.comp = comp
+            self.refmod = []
+            self.comp = []
 
         def setInterface(self, Interface):
             self.interface = Interface
@@ -99,9 +99,9 @@ class Agent:
 
             tbInterface = tbInterface.replace('|-INTERFACE-|', self.interface.name)
 
-            tbInterface = tbInterface.replace('|-CLOCK-|', self.interface.clock,name)
+            tbInterface = tbInterface.replace('|-CLOCK-|', self.interface.clock.name)
 
-            tbInterface = tbInterface.replace('|-RESET-|', self.interface.reset)
+            tbInterface = tbInterface.replace('|-RESET-|', self.interface.reset.name)
 
             # SIGNALS
 
@@ -111,7 +111,7 @@ class Agent:
             # Cleaning residual tags
             tbInterface = tbInterface.replace('|-SIGNAL_NAME-|', '')
 
-            interface_file = open( self.name + ".sv", "wt")
+            interface_file = open( self.interface.name + ".sv", "wt")
             n = interface_file.write(tbInterface)
             interface_file.close()
 
@@ -120,21 +120,21 @@ class Agent:
             with open('../src/templates/general_agent/general_transaction.tb', 'r') as file:
                 tbTransaction=file.read()
 
-            tbTransaction = tbTransaction.replace('|-TRANSACTION-|', self.name)
+            tbTransaction = tbTransaction.replace('|-TRANSACTION-|', self.transaction.name)
 
             # FIELDS
 
             for uField in self.transaction.field:
                 tbTransaction = tbTransaction.replace('|-FIELD_NAME-|', uField.type + ' ' + uField.name + ';\n\t|-FIELD_NAME-|') # INPUT DECLARATION
                 tbTransaction = tbTransaction.replace('|-FIELD_MACRO-|','`uvm_field_int(' + uField.name + ', UVM_ALL_ON|UVM_HEX)\n\t\t|-FIELD_MACRO-|') #MACRO DECLARATION
-                tbTransaction = tbTransaction.replace('|-FIELD_NAME_S-| = %h,', uField.name + ' |-FIELD_NAME_S-| = %h,') # convert2string DECLARATION
-                tbTransaction = tbTransaction.replace('|-FIELD_NAME_S-|,', uField.name + ' |-FIELD_NAME_S-|,') # convert2string DECLARATION
+                tbTransaction = tbTransaction.replace('|-FIELD_NAME_S-| = %h,', uField.name + ', |-FIELD_NAME_S-| = %h,') # convert2string DECLARATION
+                tbTransaction = tbTransaction.replace('|-FIELD_NAME_S-|,', uField.name + ', |-FIELD_NAME_S-|,') # convert2string DECLARATION
 
             # Cleaning residual tags
-            tbTransaction = tbTransaction.replace('|-FIELD_NAME-|;', '')
+            tbTransaction = tbTransaction.replace('|-FIELD_NAME-|', '')
             tbTransaction = tbTransaction.replace('|-FIELD_MACRO-|', '')
-            tbTransaction.replace('|-FIELD_NAME_S-| = %h,', '')
-            tbTransaction.replace(' |-FIELD_NAME_S-|,', '')
+            tbTransaction = tbTransaction.replace(', |-FIELD_NAME_S-| = %h,', '')
+            tbTransaction = tbTransaction.replace(', |-FIELD_NAME_S-|,', '')
 
 
             transaction_file = open( self.name + "_transaction.sv", "wt")
@@ -148,6 +148,18 @@ class Agent:
 
             tbAgent = tbAgent.replace('|-AGENT-|', self.name)
             tbAgent = tbAgent.replace('|-TRANSACTION-|', self.transaction.name)
+
+            if (self.type == 'input'):
+                tbAgent = tbAgent.replace('uvm_analysis_port #(|-TRANSACTION-|) ap_resp;', '')
+                tbAgent = tbAgent.replace('ap_resp = new("ap_resp", this);', '')
+                tbAgent = tbAgent.replace('mon.resp.connect(ap_resp);', '')
+            elif (self.type == 'output'):
+                tbAgent = tbAgent.replace('uvm_analysis_port #(|-TRANSACTION-|) ap_req;', '')
+                tbAgent = tbAgent.replace('ap_req = new("ap_req", this);', '')
+                tbAgent = tbAgent.replace('mon.req.connect(ap_req);', '')
+                tbAgent = tbAgent.replace('mon.ap_req.connect(m_coverage.collected_port);', '//OUTPUT COVERAGE')
+            else:
+                pass
             
 
             agent_file = open( self.name + "_agent.sv", "wt")
@@ -174,7 +186,6 @@ class Agent:
                 tbMonitor=file.read()
 
             tbMonitor = tbMonitor.replace('|-AGENT-|', self.name)
-            tbMonitor = tbMonitor.replace('|-TRANSACTION-|', self.transaction.name)
             tbMonitor = tbMonitor.replace('|-INTERFACE-|', self.interface.name)
             tbMonitor = tbMonitor.replace('|-INTERFACE_INSTANCE-|', self.interface.instance)
 
@@ -182,10 +193,16 @@ class Agent:
 
             if (self.type == 'input'):
                 tbMonitor = tbMonitor.replace('this.resp.write(transCollected);', '')
+                tbMonitor = tbMonitor.replace('uvm_analysis_port #(|-TRANSACTION-|) resp;', '')
+                tbMonitor = tbMonitor.replace('this.resp = new("resp", this);', '')
             elif (self.type == 'output'):
                 tbMonitor = tbMonitor.replace('this.req.write(transCollected);', '')
+                tbMonitor = tbMonitor.replace('uvm_analysis_port #(|-TRANSACTION-|) req;', '')
+                tbMonitor = tbMonitor.replace('this.req = new("req", this);', '')
             else:
                 pass
+
+            tbMonitor = tbMonitor.replace('|-TRANSACTION-|', self.transaction.name)
 
             monitor_file = open( self.name + "_monitor.sv", "wt")
             n = monitor_file.write(tbMonitor)
@@ -193,7 +210,7 @@ class Agent:
 
         def writeCoverage(self):
 
-            with open('../src/templates/general_agent/general_agent.tb', 'r') as file:
+            with open('../src/templates/general_agent/general_coverage.tb', 'r') as file:
                 tbCoverage=file.read()
 
             tbCoverage = tbCoverage.replace('|-AGENT-|', self.name)
@@ -203,14 +220,14 @@ class Agent:
             n = coverage_file.write(tbCoverage)
             coverage_file.close()
         
-        def writeAgentAll(Self):
-            writeInterface()
-            writeTransaction()
-            writeAgent()
-            writeDriver()
-            writeMonitor()
-            writeCoverage()
-            writeAgent()
+        def writeAgentAll(self):
+            self.writeInterface()
+            self.writeTransaction()
+            self.writeAgent()
+            self.writeDriver()
+            self.writeMonitor()
+            self.writeCoverage()
+            self.writeAgent()
 
 class Port:
     def __init__(self, name, direction, origin, transaction, endComp):
@@ -261,16 +278,16 @@ class Refmod:
             tbRefmod = tbRefmod.replace('|-TRANSA_CREATION-|', 'resp_'+ str(idx) + ' = new("resp_' + str(idx) + '", this)' + ';\n\t\t|-TRANSA_CREATION-|')
 
         for idx, uPort in enumerate(self.port_in):
-            tbRefmod = tbRefmod.replace('|-INPUT_PORT-|', 'uvm_analysis_fifo #(' + uPort.transaction + ') ' + 'from_' + uPort.origin + ';\n\t|-INPUT_PORT-|')
+            tbRefmod = tbRefmod.replace('|-INPUT_PORT-|', 'uvm_tlm_analysis_fifo #(' + uPort.transaction.name + ') ' + 'from_' + uPort.origin + ';\n\t|-INPUT_PORT-|')
 
         for idx, uPort in enumerate(self.port_out):
             tbRefmod = tbRefmod.replace('|-OUTPUT_PORT-|', 'uvm_analysis_export #(' + uPort.transaction.name + ') ' + uPort.origin + '_to_'+ uPort.direction + ';\n\t|-OUTPUT_PORT-|')
 
         for idx, uPort in enumerate(self.port_in):
-            tbRefmod = tbRefmod.replace('|-PORT_CREATION-|', 'from_' + uPort.origin + ' = new("' + 'from_' + uPort.origin + '", this)' + ';\n\t|-TRANSA_CREATION-|')
+            tbRefmod = tbRefmod.replace('|-PORT_CREATION-|', 'from_' + uPort.origin + ' = new("' + 'from_' + uPort.origin + '", this)' + ';\n\t\t|-PORT_CREATION-|')
 
         for idx, uPort in enumerate(self.port_out):
-            tbRefmod = tbRefmod.replace('|-PORT_CREATION-|', uPort.origin + '_to_'+ uPort.direction + ' = new("' + uPort.origin + '_to_'+ uPort.direction + '", this)' + ';\n\t|-TRANSA_CREATION-|')
+            tbRefmod = tbRefmod.replace('|-PORT_CREATION-|', uPort.origin + '_to_'+ uPort.direction + ' = new("' + uPort.origin + '_to_'+ uPort.direction + '", this)' + ';\n\t\t|-PORT_CREATION-|')
 
         tbRefmod = tbRefmod.replace('|-REFMOD_POLICY-|', self.policy.replace('\n','\n\t\t'))
 
@@ -296,12 +313,12 @@ class Comparator:
 
 class Scoreboard:
 
-    def __init__(self, name, instance, comp, refmod):
+    def __init__(self, name, instance):
         self.name = name
         self.instance = instance
         self.port = []
-        self.refmod = [refmod]
-        self.comp = [comp]
+        self.refmod = []
+        self.comp = []
 
     def addPort(self, port):
         self.port.append(port)
@@ -345,10 +362,18 @@ class Scoreboard:
 
         # Refmod Port Creation
         for idx,uPort in enumerate(self.port):
-                for idy,uRefmod in enumerate(self.refmod):
-                    if uPort.direction == uRefmod.instance:
-                        port_aux = Port('rfm_in', uPort.direction, uPort.origin , uPort.transaction)
-                        self.refmod[idy].addPortIn(port_aux)
+            for idy,uRefmod in enumerate(self.refmod):
+                if uPort.direction == uRefmod.instance:
+                    port_aux = Port('rfm_in', uPort.direction, uPort.origin , uPort.transaction, 0)
+                    self.refmod[idy].addPortIn(port_aux)
+        
+        for idx,uRefmod in enumerate(self.refmod):
+            for idz, uPort_out in enumerate(uRefmod.port_out):
+                if (uPort_out.endComp == 0):
+                    for idy,uRefmod_out in enumerate(self.refmod):
+                        if (uPort_out.direction + '_rfm') == (uRefmod_out.instance):
+                            port_aux = Port('rfm_in', uPort_out.direction, uPort_out.origin , uPort_out.transaction, 0)
+                            self.refmod[idy].addPortIn(port_aux)
 
         # Refmod -> Comp connection
         for idy,uRefmod in enumerate(self.refmod):
@@ -372,12 +397,12 @@ class Scoreboard:
         scoreboard_file.close()
 
 class Env:
-    def __init__(self, name, instance, port, agent, scoreboard):
+    def __init__(self, name, instance, port, scoreboard):
         self.name = name + '_env'
         self.instance = instance
         self.port = [port]
         self.scoreboard = scoreboard
-        self.agent = [agent]
+        self.agent = []
 
     def addPort(self, port):
         self.port.append(port)
@@ -403,7 +428,7 @@ class Env:
         for idx,agent in enumerate(self.agent):
             tbEnv = tbEnv.replace('|-AGENT_CREATION-|', agent.instance + ' = ' + agent.name + '_agent' + '::create("' + agent.instance + '", this)' +  ';\n\t\t|-AGENT_CREATION-|')
 
-        tbEnv = tbEnv.replace('|-SCOREBOARD_CREATION-|', self.scoreboard.instance + ' = ' + self.scoreboard.name + '_agent' + '::create("' + self.scoreboard.instance + '", this)' +  ';\n\t\t|-SCOREBOARD_CREATION-|')
+        tbEnv = tbEnv.replace('|-SCOREBOARD_CREATION-|', self.scoreboard.instance + ' = ' + self.scoreboard.name + '_scoreboard' + '::create("' + self.scoreboard.instance + '", this)' +  ';\n\t\t|-SCOREBOARD_CREATION-|')
 
         for uAgent in (self.agent):
             if (uAgent.type == 'input'):
@@ -537,10 +562,7 @@ class Module:
 
         for idx,uInterface in enumerate(self.interface):
             for idy,busSig in enumerate(uInterface.signal):
-                if busSig.connect[0] == '':
-                    tbWrapper = tbWrapper.replace('|-CONNECTIONS-|', '.'+ busSig.name + '(' + uInterface.instance + '_if.' + busSig.name +') ' +',\n\t\t|-INTERFACE-|')
-                else:
-                    tbWrapper = tbWrapper.replace('|-CONNECTIONS-|', '.'+ busSig.connect + '(' + uInterface.instance + '_if.' + busSig.name +')' + ',\n\t\t|-CONNECTIONS-|')
+                    tbWrapper = tbWrapper.replace('|-CONNECTIONS-|', '.'+ busSig.name + '(' + uInterface.instance + '_if.' + busSig.name +') ' +',\n\t\t|-CONNECTIONS-|')
 
         for idx,uClock in enumerate(self.clock):
             tbWrapper = tbWrapper.replace('|-CONNECTIONS-|', '.' + uClock.name + '(' + uClock.name + ')' +',\n\t\t|-CONNECTIONS-|')
@@ -614,6 +636,576 @@ class Module:
         n = top_file.write(tbTop)
         top_file.close()
 
+class Parser:
+
+    def __init__(self, name):
+        self.name = name
+
+    def parse(self):
+        with open('../scripts/test.xtb', 'r') as file:
+            tbConfig=file.read()
+
+        tbConfig_Split = "".join([s for s in tbConfig.splitlines(True) if s.strip("\r\n")])
+
+        tbConfig_Split = tbConfig_Split.splitlines()
+
+        tbSplit_agent = []
+        tbSplit_comp = []
+        tbSplit_signal = []
+        tbSplit_field = []
+        tbSplit_clock = []
+        tbSplit_reset = []
+        tbSplit_interface = [] 
+        tbSplit_transa = []
+        tbSplit_refmod = []
+        tbSplit_module = []
+        tbSplit_test = []
+        tbSplit_sequence = []
+
+        for line in tbConfig_Split:
+            if 'agent' in line and '=' not in line:
+                current_analysis='agent'
+            if 'comp' in line and '=' not in line:
+                current_analysis='comp'
+            if 'signal' in line and '=' not in line:
+                current_analysis='signal'
+            if 'field' in line and '=' not in line:
+                current_analysis='field'
+            if 'clock' in line and '=' not in line:
+                current_analysis='clock'
+            if 'reset' in line and '=' not in line:
+                current_analysis='reset'
+            if 'interface' in line and '=' not in line:
+                current_analysis='interface'
+            if 'transaction' in line and '=' not in line:
+                current_analysis='transaction'
+            if 'refmod' in line and '=' not in line:
+                current_analysis='refmod'
+            if 'module' in line and '=' not in line:
+                current_analysis='module'
+            if 'test' in line and '=' not in line:
+                current_analysis='test'
+            if 'sequence' in line and '=' not in line:
+                current_analysis='sequence'
+            if '}' in line and '=' not in line:
+                current_analysis=current_analysis
+
+            if current_analysis == 'agent':
+                tbSplit_agent.append(line)
+            if current_analysis == 'comp':
+                tbSplit_comp.append(line)
+            if current_analysis == 'signal':
+                tbSplit_signal.append(line)
+            if current_analysis == 'field':
+                tbSplit_field.append(line)
+            if current_analysis == 'clock':
+                tbSplit_clock.append(line)
+            if current_analysis == 'reset':
+                tbSplit_reset.append(line)
+            if current_analysis == 'interface':
+                tbSplit_interface.append(line)
+            if current_analysis == 'transaction':
+                tbSplit_transa.append(line)
+            if current_analysis == 'refmod':
+                tbSplit_refmod.append(line)
+            if current_analysis == 'module':
+                tbSplit_module.append(line)
+            if current_analysis == 'test':
+                tbSplit_test.append(line)
+            if current_analysis == 'sequence':
+                tbSplit_sequence.append(line)
+            if current_analysis == 'NONE':
+                pass
+
+        list_agent = []
+        list_comp = []
+        list_signal = []
+        list_field = []
+        list_clock = []
+        list_reset = []
+        list_interface = [] 
+        list_transa = []
+        list_refmod = []
+        list_test = []
+        list_sequence = []
+        
+        for line in tbSplit_module:
+            if 'module' in line and '=' not in line:
+                auxName = ''
+
+            if 'name' in line:
+                string = line.split("=", 1)
+                auxName = string[1]
+                auxName = auxName.replace(" ","")
+            
+            if '}' in line:
+                moduleName = auxName
+
+        for line in tbSplit_clock:
+            if 'clock' in line and '=' not in line:
+                auxName = 'NONE'
+                auxPeriod = 'NONE'
+
+            if 'name' in line:
+                string = line.split("=", 1)
+                auxName = string[1]
+                auxName = auxName.replace(" ","")
+
+            if 'period' in line:
+                string = line.split("=", 1)
+                auxPeriod = string[1]
+                auxPeriod = auxPeriod.replace(" ","")
+            
+            if '}' in line:
+                auxClock = Clock(auxName, auxPeriod)
+                list_clock.append(auxClock)
+
+        for line in tbSplit_reset:
+            if 'reset' in line and '=' not in line:
+                auxName = 'NONE'
+                auxPeriod = 'NONE'
+                auxDuration = 'NONE'
+
+            if 'name' in line:
+                string = line.split("=", 1)
+                auxName = string[1]
+                auxName = auxName.replace(" ","")
+
+            if 'period' in line:
+                string = line.split("=", 1)
+                auxPeriod = string[1]
+                auxPeriod = auxPeriod.replace(" ","")
+            
+            if 'duration' in line:
+                string = line.split("=", 1)
+                auxDuration = string[1]
+                auxDuration = auxDuration.replace(" ","")
+
+            if '}' in line:
+                auxReset = Reset(auxName, auxPeriod, auxDuration)
+                list_reset.append(auxReset)
+
+        for line in tbSplit_signal:
+            if 'signal' in line and '=' not in line:
+                auxName = 'NONE'
+                auxType = 'NONE'
+                auxIo = 'NONE'
+                auxConnect = 'NONE'
+
+            if 'name' in line:
+                string = line.split("=", 1)
+                auxName = string[1]
+                auxName = auxName.replace(" ","")
+
+            if 'type' in line:
+                string = line.split("=", 1)
+                auxType = string[1]
+                auxType = auxType.replace(" ","")
+            
+            if 'io' in line:
+                string = line.split("=", 1)
+                auxIo = string[1]
+                auxIo = auxIo.replace(" ","")
+            
+            if 'connect' in line:
+                string = line.split("=", 1)
+                auxConnect = string[1]
+                auxConnect = auxConnect.replace(" ","")
+            
+            if '}' in line:
+                auxSignal = Signal(auxName, auxType, auxIo)
+                auxSignal.addConnection(auxConnect)
+                list_signal.append(auxSignal)
+
+        for line in tbSplit_field:
+            if 'field' in line and '=' not in line:
+                auxName = 'NONE'
+                auxType = 'NONE'
+
+            if 'name' in line:
+                string = line.split("=", 1)
+                auxName = string[1]
+                auxName = auxName.replace(" ","")
+
+            if 'type' in line:
+                string = line.split("=", 1)
+                auxType = string[1]
+                auxType = auxType.replace(" ","")
+            
+            
+            if (auxName is not 'NONE') and (auxType is not 'NONE'):
+                auxField = Field(auxName, auxType)
+                list_field.append(auxField)
+
+        for line in tbSplit_interface:
+
+            if 'interface' in line and '=' not in line:
+                auxName = ''
+                auxInstance = ''
+                auxSignal_list = []                
+
+            if 'name' in line:
+                string = line.split("=", 1)
+                auxName = string[1]
+                auxName = auxName.replace(" ","")
+
+            if 'instance' in line:
+                string = line.split("=", 1)
+                auxInstance = string[1]
+                auxInstance = auxInstance.replace(" ","")
+
+            if 'clock' in line:
+                string = line.split("=", 1)
+                auxClock_name = string[1]
+                auxClock_name = auxClock_name.replace(" ","")
+
+                for idx,uClock in enumerate(list_clock):
+                    if (uClock.name == auxClock_name):
+                        auxClock = uClock
+                        break
+
+            if 'reset' in line:
+                string = line.split("=", 1)
+                auxReset_name = string[1]
+                auxReset_name = auxReset_name.replace(" ","")
+
+                for idx,uReset in enumerate(list_reset):
+                    if (uReset.name == auxReset_name):
+                        auxReset = uReset
+                        break
+            
+            if 'signal' in line:
+                string = line.split("=", 1)
+                auxSignal_name = string[1]
+                auxSignal_name = auxSignal_name.replace(" ","")
+
+                for idx,uSignal in enumerate(list_signal):
+                    if (uSignal.name == auxSignal_name):
+                        auxSignal = uSignal
+                        break
+
+                auxSignal_list.append(auxSignal)
+                
+            
+            if '}' in line:
+
+                auxInterface = Interface(auxName, auxInstance, auxClock, auxReset)
+                for idx,uSignal in enumerate(auxSignal_list):
+                    auxInterface.addSignal(uSignal)
+
+                list_interface.append(auxInterface)
+        
+        for line in tbSplit_transa:
+
+            if 'transaction' in line and '=' not in line:
+                auxName = ''
+                auxField_list = []                
+
+            if 'name' in line:
+                string = line.split("=", 1)
+                auxName = string[1]
+                auxName = auxName.replace(" ","")
+            
+            
+            if 'field' in line:
+                string = line.split("=", 1)
+                auxField_name = string[1]
+                auxField_name = auxField_name.replace(" ","")
+
+                for idx,uField in enumerate(list_field):
+                    if (uField.name == auxField_name):
+                        auxField = uField
+                        break
+
+                auxField_list.append(auxField)
+                
+            
+            if '}' in line:
+
+                auxTransaction = Transaction(auxName)
+                for idx,uField in enumerate(auxField_list):
+                    auxTransaction.addField(uField)
+
+                list_transa.append(auxTransaction)
+
+        for line in tbSplit_comp:
+
+            if 'comp' in line and '=' not in line:
+                auxName = ''
+                auxInstance =''
+
+            if 'name' in line:
+                string = line.split("=", 1)
+                auxName = string[1]
+                auxName = auxName.replace(" ","")
+            
+            if 'instance' in line:
+                string = line.split("=", 1)
+                auxInstance = string[1]
+                auxInstance = auxInstance.replace(" ","")
+
+            if 'transaction' in line:
+                string = line.split("=", 1)
+                auxTransaction_name = string[1]
+                auxTransaction_name = auxTransaction_name.replace(" ","")
+
+                for idx,uTransaction in enumerate(list_transa):
+                    if (uTransaction.name == (auxTransaction_name + '_transaction')):
+                        auxTransaction = uTransaction
+                        break
+
+            if '}' in line:
+
+                auxComp = Comparator(auxName, auxInstance, auxTransaction)
+                list_comp.append(auxComp)
+            
+        for line in tbSplit_refmod:
+
+            if 'refmod' in line and '=' not in line:
+                auxName = ''
+                auxInstance =''
+                auxPort_out = []
+
+            if 'name' in line:
+                string = line.split("=", 1)
+                auxName = string[1]
+                auxName = auxName.replace(" ","")
+            
+            if 'instance' in line:
+                string = line.split("=", 1)
+                auxInstance = string[1]
+                auxInstance = auxInstance.replace(" ","")
+            
+            if 'refmod_policy' in line:
+                string = line.split("=", 1)
+                auxRefmod_policy = string[1]
+                auxRefmod_policy = auxRefmod_policy.replace(" ","")
+
+            if 'comp' in line:
+                string = line.split("=", 1)
+                auxComp = string[1]
+                auxComp = auxComp.replace(" ","")
+            
+            if 'connect' in line:
+                string = line.split("=", 1)
+                auxConnect_name = string[1]
+                auxConnect_name = auxConnect_name.replace(" ","")
+                connection = auxConnect_name.split(",", 1)
+                for uTransaction_out in list_transa:
+                    if uTransaction_out.name == (connection[1] + '_transaction'):
+                        aux_Transa = uTransaction_out
+                        break
+
+                auxPort = Port(auxName, connection[0], auxInstance, aux_Transa, 0)
+                auxPort_out.append(auxPort)
+
+            if '}' in line:
+
+                for idx,uComp in enumerate(list_comp):
+                    if (uComp.instance == auxComp):
+                        auxTransa_comp = uComp.transaction
+                        break
+
+                port_comp = Port('rfmtocomp', auxComp, auxInstance, auxTransa_comp, 1)
+
+                auxRfm = Refmod(auxName, auxInstance, auxRefmod_policy, port_comp, auxComp)
+                if not auxPort_out:
+                    pass
+                else:
+                    for idx, uConnect in enumerate(auxPort_out):
+                        auxRfm.addPortOut(uConnect)
+                
+                list_refmod.append(auxRfm)
+
+        for line in tbSplit_agent:
+
+            if 'agent' in line and '=' not in line:
+                auxName = ''
+                auxInstance = ''          
+
+            if 'name' in line:
+                string = line.split("=", 1)
+                auxName = string[1]
+                auxName = auxName.replace(" ","")
+
+            if 'instance' in line:
+                string = line.split("=", 1)
+                auxInstance = string[1]
+                auxInstance = auxInstance.replace(" ","")
+
+            if 'type' in line:
+                string = line.split("=", 1)
+                auxType = string[1]
+                auxType = auxType.replace(" ","")
+            
+            if 'driver_policy' in line:
+                string = line.split("=", 1)
+                auxDriver_policy = string[1]
+                auxDriver_policy = auxDriver_policy.replace(" ","")
+
+            if 'monitor_policy' in line:
+                string = line.split("=", 1)
+                auxMonitor_policy = string[1]
+                auxMonitor_policy = auxMonitor_policy.replace(" ","")
+
+            if 'transaction' in line:
+                string = line.split("=", 1)
+                auxTransaction_name = string[1]
+                auxTransaction_name = auxTransaction_name.replace(" ","")
+
+                for idx,uTransaction in enumerate(list_transa):
+                    if (uTransaction.name == (auxTransaction_name + '_transaction')):
+                        auxTransaction = uTransaction
+                        break
+            
+            if 'interface' in line:
+                string = line.split("=", 1)
+                auxInterface_name = string[1]
+                auxInterface_name = auxInterface_name.replace(" ","")
+
+                for idx,uInterface in enumerate(list_interface):
+                    if (uInterface.name == auxInterface_name):
+                        auxInterface = uInterface
+                        break 
+            
+            if 'refmod' in line:
+                string = line.split("=", 1)
+                auxRefmod_name = string[1]
+                auxRefmod_name = auxRefmod_name.replace(" ","")
+            
+            if 'comp' in line:
+                string = line.split("=", 1)
+                auxComp_name = string[1]
+                auxComp_name = auxComp_name.replace(" ","")
+
+            if '}' in line:
+
+                auxAgent = Agent(auxName, auxInstance, auxInterface, auxTransaction, auxDriver_policy, auxMonitor_policy, auxType)
+
+                if (auxAgent.type == 'input'):
+                    auxAgent.setRefmodConn(auxRefmod_name + '_rfm')
+                elif (auxAgent.type == 'output'):
+                    auxAgent.setCompConn(auxComp_name)
+                else:
+                    auxAgent.setRefmodConn(auxRefmod_name + '_rfm')
+                    auxAgent.setCompConn(auxComp_name)
+
+                list_agent.append(auxAgent)
+        
+
+        # Creating ENV
+
+        scoreboard = Scoreboard(moduleName, moduleName +'_scb')
+
+        for uComp in list_comp:
+            scoreboard.addComp(uComp)
+
+        for uRefmod in list_refmod:
+            scoreboard.addRefmod(uRefmod)
+        
+        env = Env(moduleName, 'env', [], scoreboard)
+
+        for uAgent in list_agent:
+            env.addAgent(uAgent)
+
+        env.writeEnv()
+        env.scoreboard.writeScoreboard()
+
+        for refmod in env.scoreboard.refmod:
+            refmod.writeRefmod()
+
+        for agent in env.agent:
+            agent.writeAgentAll()
+
+        # Creating Tests and Sequences
+
+        for line in tbSplit_sequence:
+            if 'sequence' in line and '=' not in line:
+                auxName = 'NONE'
+
+            if 'name' in line:
+                string = line.split("=", 1)
+                auxName = string[1]
+                auxName = auxName.replace(" ","")
+
+            if 'transaction' in line:
+                string = line.split("=", 1)
+                auxTransaction_name = string[1]
+                auxTransaction_name = auxTransaction_name.replace(" ","")
+
+                for idx,uTransaction in enumerate(list_transa):
+                    if (uTransaction.name == (auxTransaction_name + '_transaction')):
+                        auxTransaction = uTransaction
+                        break
+            
+            if 'agent' in line:
+                string = line.split("=", 1)
+                auxAgent_name = string[1]
+                auxAgent_name = auxAgent_name.replace(" ","")
+
+                for idx,uAgent in enumerate(list_agent):
+                    if (uAgent.name == auxAgent_name):
+                        auxAgent = uAgent
+                        break
+            
+            if '}' in line:
+                auxSequence = Sequence(auxName, auxAgent, auxTransaction)
+                list_sequence.append(auxSequence)
+
+
+        auxSequence = []
+        for line in tbSplit_test:
+            if 'test' in line and '=' not in line:
+                auxName = 'NONE'
+
+            if 'name' in line:
+                string = line.split("=", 1)
+                auxName = string[1]
+                auxName = auxName.replace(" ","")
+
+            if 'sequence' in line:
+                string = line.split("=", 1)
+                auxSequence_name = string[1]
+                auxSequence_name = auxSequence_name.replace(" ","")
+
+                for idx,uSequence in enumerate(list_sequence):
+                    if (uSequence.name == (auxSequence_name + '_sequence')):
+                        auxSequence.append(uSequence)
+                        break
+            
+            if '}' in line:
+                auxTest= Test(env, auxName)
+                for uSequence in auxSequence:
+                    auxTest.addSequence(uSequence)
+                
+                list_test.append(auxTest)
+
+    
+        for sequence in list_sequence:
+            sequence.writeSequence()
+        
+        for test in list_test:
+            test.writeTest()
+
+        Dut = Module(moduleName)
+        
+        for uClock in list_clock:
+            Dut.addClock(uClock)
+        
+        for uReset in list_reset:
+            Dut.addReset(uReset)
+
+        for uInterface in list_interface:
+            Dut.addInterface(uInterface)
+
+        for uSignal in list_signal:    
+            Dut.addSignal(uSignal)
+        
+
+        Dut.addEnv(env)
+
+        Dut.writeWrapper()
+        Dut.writeTop()
 
 
 def display_title_bar():
@@ -648,71 +1240,75 @@ def display_title_bar():
 def main():
     display_title_bar()
 
-    uSignal1 = Signal('in_data', 'logic [8]', 'input')
-    uSignal_add = Signal('out_data', 'logic [8]', 'output')
+    # uSignal1 = Signal('in_data', 'logic [8]', 'input')
+    # uSignal_add = Signal('out_data', 'logic [8]', 'output')
 
-    uSignal1.addConnection('in_data')
-    uSignal_add.addConnection('out_data') 
+    # uSignal1.addConnection('in_data')
+    # uSignal_add.addConnection('out_data') 
 
-    clock = Clock('clock', 90)
-    reset = Reset('reset', 3e12, 180)
+    # clock = Clock('clock', 90)
+    # reset = Reset('reset', 3e12, 180)
 
-    uInterface = Interface('agentDummy', 'agtDummy' , uSignal1, clock, reset)
+    # uInterface = Interface('agentDummy', 'agtDummy' , uSignal1, clock, reset)
 
-    uInterface.addSignal(signal=uSignal_add)
+    # uInterface.addSignal(signal=uSignal_add)
 
-    dummyField = Field('in_data', 'int')
-    dummyField2 = Field('out_data', 'int')
-    dummyTransac = Transaction('dummyTransa', dummyField)
+    # dummyField = Field('in_data', 'int')
+    # dummyField2 = Field('out_data', 'int')
+    # dummyTransac = Transaction('dummyTransa', dummyField)
 
-    dummyTransac.addField(dummyField2)
+    # dummyTransac.addField(dummyField2)
 
-    uAgent = Agent( 'agentDummy', 'instanceDummy', uInterface, dummyTransac, '', '', 'bidirectional', 'dummyRfm', 'dummyComp')
+    # uAgent = Agent( 'agentDummy', 'instanceDummy', uInterface, dummyTransac, '', '', 'bidirectional', 'dummyRfm', 'dummyComp')
     
-    output_port = Port('comp', 'dummyComp', 'dummyRfm', dummyTransac, 1)
-    output_port_int = Port('rfm2', 'dummyRfm2', 'dummyRfm', dummyTransac, 0)
-    output_port2 = Port('comp2', 'dummyComp2', 'dummyRfm2', dummyTransac, 1)
+    # output_port = Port('comp', 'dummyComp', 'dummyRfm', dummyTransac, 1)
+    # output_port_int = Port('rfm2', 'dummyRfm2', 'dummyRfm', dummyTransac, 0)
+    # output_port2 = Port('comp2', 'dummyComp2', 'dummyRfm2', dummyTransac, 1)
 
-    comp = Comparator('comp', 'dummyComp', dummyTransac)
+    # comp = Comparator('comp', 'dummyComp', dummyTransac)
     
-    refmod = Refmod ('dummyRefmod', 'dummyRfm', '', output_port, 'dummyComp')
+    # refmod = Refmod ('dummyRefmod', 'dummyRfm', '', output_port, 'dummyComp')
 
-    refmod.addPortOut(output_port_int)
+    # refmod.addPortOut(output_port_int)
 
-    comp2 = Comparator('comp2', 'dummyComp2', dummyTransac)
+    # comp2 = Comparator('comp2', 'dummyComp2', dummyTransac)
     
-    refmod2 = Refmod ('dummyRefmod2', 'dummyRfm2', '', output_port2, 'dummyComp2')
+    # refmod2 = Refmod ('dummyRefmod2', 'dummyRfm2', '', output_port2, 'dummyComp2')
 
-    scoreboard = Scoreboard('dummyScoreboard', 'dummyScb', comp, refmod)
-    scoreboard.addComp(comp2)
-    scoreboard.addRefmod(refmod2)
+    # scoreboard = Scoreboard('dummyScoreboard', 'dummyScb', comp, refmod)
+    # scoreboard.addComp(comp2)
+    # scoreboard.addRefmod(refmod2)
 
-    env = Env('dummyEnv', 'env', [], uAgent, scoreboard)
+    # env = Env('dummyEnv', 'env', [], uAgent, scoreboard)
     
-    env.writeEnv()
-    env.scoreboard.writeScoreboard()
-    for refmod in env.scoreboard.refmod:
-        refmod.writeRefmod()
+    # env.writeEnv()
+    # env.scoreboard.writeScoreboard()
+    # for refmod in env.scoreboard.refmod:
+    #     refmod.writeRefmod()
 
-    sequence = Sequence('dummy', uAgent, dummyTransac)
-    test = Test(env, 'dummyT')
+    # sequence = Sequence('dummy', uAgent, dummyTransac)
+    # test = Test(env, 'dummyT')
 
-    test.addSequence(sequence)
+    # test.addSequence(sequence)
 
-    sequence.writeSequence()
-    test.writeTest()
+    # sequence.writeSequence()
+    # test.writeTest()
 
-    dummyDut = Module('dummyDut')
+    # dummyDut = Module('dummyDut')
 
-    dummyDut.addClock(clock)
-    dummyDut.addReset(reset)
-    dummyDut.addInterface(uInterface)
-    dummyDut.addSignal(uSignal1)
-    dummyDut.addSignal(uSignal_add)
-    dummyDut.addEnv(env)
+    # dummyDut.addClock(clock)
+    # dummyDut.addReset(reset)
+    # dummyDut.addInterface(uInterface)
+    # dummyDut.addSignal(uSignal1)
+    # dummyDut.addSignal(uSignal_add)
+    # dummyDut.addEnv(env)
 
-    dummyDut.writeWrapper()
-    dummyDut.writeTop()
+    # dummyDut.writeWrapper()
+    # dummyDut.writeTop()
+
+    uParser = Parser('Parser')
+
+    uParser.parse()
 
 
 
