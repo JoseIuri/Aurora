@@ -636,6 +636,34 @@ class Module:
         n = top_file.write(tbTop)
         top_file.close()
 
+
+class Package:
+    def __init__(self, name):
+        self.name = name
+
+    def writePackage(self, outputdir):
+        pkg = """package {MODULE}_pkg;
+    `include "uvm_macros.svh"
+    import uvm_pkg::*;
+
+    |-FILES-|
+endpackage""".format(MODULE=self.name)
+
+        f = []
+        for (dirpath, dirnames, filenames) in os.walk(outputdir):
+            f.extend(filenames)
+
+        for filename in f:
+            if '_top.sv' not in filename and '_wrapper.sv' not in filename:
+                print(filename)
+                pkg = pkg.replace('|-FILES-|', '`include "' + filename +'"\n\t|-FILES-|')
+
+        pkg = pkg.replace('|-FILES-|', '')
+
+        pkg_file = open(outputdir + '/' + self.name + "_pkg.sv", "wt")
+        n = pkg_file.write(pkg)
+        pkg_file.close()
+
 class Parser:
 
     def __init__(self, name, inputfile, outputdir):
@@ -1208,6 +1236,10 @@ class Parser:
 
         Dut.writeWrapper(self.outputdir)
         Dut.writeTop(self.outputdir)
+
+        pkg = Package(moduleName)
+
+        pkg.writePackage(self.outputdir)
 
 
 def display_title_bar():
