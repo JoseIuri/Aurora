@@ -10,9 +10,9 @@
 ######################################################################
 
 import os
-import sys
+import sys, getopt
 from colorama import Fore
-import pathlib as path
+from pathlib import Path
 
 class Clock:
     def __init__(self, name, period):
@@ -92,9 +92,9 @@ class Agent:
         def setCompConn(self, comp):
             self.comp = comp
 
-        def writeInterface(self):
+        def writeInterface(self, outputdir):
 
-            with open('../src/templates/general_agent/general_interface.tb', 'r') as file:
+            with open(os.path.dirname(os.path.realpath(__file__)) + '/../src/templates/general_agent/general_interface.tb', 'r') as file:
                 tbInterface=file.read()
 
             tbInterface = tbInterface.replace('|-INTERFACE-|', self.interface.name)
@@ -111,13 +111,13 @@ class Agent:
             # Cleaning residual tags
             tbInterface = tbInterface.replace('|-SIGNAL_NAME-|', '')
 
-            interface_file = open( self.interface.name + ".sv", "wt")
+            interface_file = open(outputdir + '/' + self.interface.name + ".sv", "wt")
             n = interface_file.write(tbInterface)
             interface_file.close()
 
-        def writeTransaction(self):
+        def writeTransaction(self, outputdir):
 
-            with open('../src/templates/general_agent/general_transaction.tb', 'r') as file:
+            with open(os.path.dirname(os.path.realpath(__file__)) + '/../src/templates/general_agent/general_transaction.tb', 'r') as file:
                 tbTransaction=file.read()
 
             tbTransaction = tbTransaction.replace('|-TRANSACTION-|', self.transaction.name)
@@ -137,13 +137,13 @@ class Agent:
             tbTransaction = tbTransaction.replace(', |-FIELD_NAME_S-|,', '')
 
 
-            transaction_file = open( self.name + "_transaction.sv", "wt")
+            transaction_file = open(outputdir + '/' + self.name + "_transaction.sv", "wt")
             n = transaction_file.write(tbTransaction)
             transaction_file.close()
 
-        def writeAgent(self):
+        def writeAgent(self, outputdir):
 
-            with open('../src/templates/general_agent/general_agent.tb', 'r') as file:
+            with open(os.path.dirname(os.path.realpath(__file__)) + '/../src/templates/general_agent/general_agent.tb', 'r') as file:
                 tbAgent=file.read()
 
             tbAgent = tbAgent.replace('|-AGENT-|', self.name)
@@ -162,12 +162,12 @@ class Agent:
                 pass
             
 
-            agent_file = open( self.name + "_agent.sv", "wt")
+            agent_file = open(outputdir + '/' + self.name + "_agent.sv", "wt")
             n = agent_file.write(tbAgent)
             agent_file.close()
 
-        def writeDriver(self):
-            with open('../src/templates/general_agent/general_driver.tb', 'r') as file:
+        def writeDriver(self, outputdir):
+            with open(os.path.dirname(os.path.realpath(__file__)) + '/../src/templates/general_agent/general_driver.tb', 'r') as file:
                 tbDriver=file.read()
 
             tbDriver = tbDriver.replace('|-AGENT-|', self.name)
@@ -177,12 +177,12 @@ class Agent:
 
             tbDriver = tbDriver.replace('|-DRIVER_POLICY-|', self.driver_policy.replace('\n','\n\t'))
 
-            driver_file = open( self.name + "_driver.sv", "wt")
+            driver_file = open(outputdir + '/' + self.name + "_driver.sv", "wt")
             n = driver_file.write(tbDriver)
             driver_file.close()
 
-        def writeMonitor(self):
-            with open('../src/templates/general_agent/general_monitor.tb', 'r') as file:
+        def writeMonitor(self, outputdir):
+            with open(os.path.dirname(os.path.realpath(__file__)) + '/../src/templates/general_agent/general_monitor.tb', 'r') as file:
                 tbMonitor=file.read()
 
             tbMonitor = tbMonitor.replace('|-AGENT-|', self.name)
@@ -204,30 +204,30 @@ class Agent:
 
             tbMonitor = tbMonitor.replace('|-TRANSACTION-|', self.transaction.name)
 
-            monitor_file = open( self.name + "_monitor.sv", "wt")
+            monitor_file = open(outputdir + '/' + self.name + "_monitor.sv", "wt")
             n = monitor_file.write(tbMonitor)
             monitor_file.close()
 
-        def writeCoverage(self):
+        def writeCoverage(self, outputdir):
 
-            with open('../src/templates/general_agent/general_coverage.tb', 'r') as file:
+            with open(os.path.dirname(os.path.realpath(__file__)) + '/../src/templates/general_agent/general_coverage.tb', 'r') as file:
                 tbCoverage=file.read()
 
             tbCoverage = tbCoverage.replace('|-AGENT-|', self.name)
             tbCoverage = tbCoverage.replace('|-TRANSACTION-|', self.transaction.name)
 
-            coverage_file = open( self.name + "_coverage.sv", "wt")
+            coverage_file = open(outputdir + '/' + self.name + "_coverage.sv", "wt")
             n = coverage_file.write(tbCoverage)
             coverage_file.close()
         
-        def writeAgentAll(self):
-            self.writeInterface()
-            self.writeTransaction()
-            self.writeAgent()
-            self.writeDriver()
-            self.writeMonitor()
-            self.writeCoverage()
-            self.writeAgent()
+        def writeAgentAll(self, outputdir):
+            self.writeInterface(outputdir)
+            self.writeTransaction(outputdir)
+            self.writeAgent(outputdir)
+            self.writeDriver(outputdir)
+            self.writeMonitor(outputdir)
+            self.writeCoverage(outputdir)
+            self.writeAgent(outputdir)
 
 class Port:
     def __init__(self, name, direction, origin, transaction, endComp):
@@ -259,8 +259,8 @@ class Refmod:
     def addDestination (self, destination):
         self.destination.append(destination)
 
-    def writeRefmod(self):
-        with open('../src/templates/scoreboard/refmod.tb', 'r') as file:
+    def writeRefmod(self, outputdir):
+        with open(os.path.dirname(os.path.realpath(__file__)) + '/../src/templates/scoreboard/refmod.tb', 'r') as file:
             tbRefmod=file.read()
 
         tbRefmod = tbRefmod.replace('|-REFMOD-|', self.name)
@@ -299,7 +299,7 @@ class Refmod:
         tbRefmod = tbRefmod.replace('|-OUTPUT_PORT-|', '')
         tbRefmod = tbRefmod.replace('|-PORT_CREATION-|', '')
 
-        refmod_file = open( self.name + ".sv", "wt")
+        refmod_file = open(outputdir + '/' + self.name + ".sv", "wt")
         n = refmod_file.write(tbRefmod)
         refmod_file.close()
 
@@ -329,9 +329,9 @@ class Scoreboard:
     def addRefmod(self, refmod):
         self.refmod.append(refmod)
 
-    def writeScoreboard(self):
+    def writeScoreboard(self, outputdir):
 
-        with open('../src/templates/scoreboard/scoreboard.tb', 'r') as file:
+        with open(os.path.dirname(os.path.realpath(__file__)) + '/../src/templates/scoreboard/scoreboard.tb', 'r') as file:
             tbScoreboard=file.read()
 
         tbScoreboard = tbScoreboard.replace('|-SCOREBOARD-|', self.name)
@@ -392,7 +392,7 @@ class Scoreboard:
         tbScoreboard = tbScoreboard.replace('|-PORTS_CREATION-|', '')
         tbScoreboard = tbScoreboard.replace('|-CONNECTIONS-|', '')
 
-        scoreboard_file = open( self.name + "_scoreboard.sv", "wt")
+        scoreboard_file = open(outputdir + '/' + self.name + "_scoreboard.sv", "wt")
         n = scoreboard_file.write(tbScoreboard)
         scoreboard_file.close()
 
@@ -413,9 +413,9 @@ class Env:
     def addAgent(self, agent):
         self.agent.append(agent)
 
-    def writeEnv(self):
+    def writeEnv(self, outputdir):
 
-        with open('../src/templates/env.tb', 'r') as file:
+        with open(os.path.dirname(os.path.realpath(__file__)) + '/../src/templates/env.tb', 'r') as file:
             tbEnv=file.read()
 
         tbEnv = tbEnv.replace('|-ENV-|', self.name)
@@ -458,7 +458,7 @@ class Env:
         tbEnv = tbEnv.replace('|-CONNECTIONS-|', '')
 
 
-        env_file = open( self.name + ".sv", "wt")
+        env_file = open(outputdir + '/' + self.name + ".sv", "wt")
         n = env_file.write(tbEnv)
         env_file.close()
 
@@ -469,15 +469,15 @@ class Sequence:
         self.agent = [agent]
         self.transaction = transaction
 
-    def writeSequence(self):
+    def writeSequence(self, outputdir):
 
-            with open('../src/templates/sequence.tb', 'r') as file:
+            with open(os.path.dirname(os.path.realpath(__file__)) + '/../src/templates/sequence.tb', 'r') as file:
                 tbSequence=file.read()
 
             tbSequence = tbSequence.replace('|-SEQUENCE-|', self.name)
             tbSequence = tbSequence.replace('|-TRANSACTION-|', self.transaction.name)
 
-            sequence_file = open( self.name + ".sv", "wt")
+            sequence_file = open(outputdir + '/' + self.name + ".sv", "wt")
             n = sequence_file.write(tbSequence)
             sequence_file.close()
 
@@ -490,9 +490,9 @@ class Test:
     def addSequence(self, sequence):
         self.sequence.append(sequence)
 
-    def writeTest(self):
+    def writeTest(self, outputdir):
 
-        with open('../src/templates/test.tb', 'r') as file:
+        with open(os.path.dirname(os.path.realpath(__file__)) + '/../src/templates/test.tb', 'r') as file:
             tbTest=file.read()
 
         tbTest = tbTest.replace('|-TEST-|', self.name)
@@ -517,7 +517,7 @@ class Test:
         tbTest = tbTest.replace('|-SEQUENCE_START-|', '')
 
 
-        test_file = open( self.name + ".sv", "wt")
+        test_file = open(outputdir + '/' + self.name + ".sv", "wt")
         n = test_file.write(tbTest)
         test_file.close()
 
@@ -545,8 +545,8 @@ class Module:
     def addEnv(self, env):
         self.env.append(env)
 
-    def writeWrapper(self):
-        with open('../src/templates/wrapper.tb', 'r') as file:
+    def writeWrapper(self, outputdir):
+        with open(os.path.dirname(os.path.realpath(__file__)) + '/../src/templates/wrapper.tb', 'r') as file:
             tbWrapper=file.read()
         
         tbWrapper = tbWrapper.replace('|-MODULE-|', self.name)
@@ -574,12 +574,12 @@ class Module:
         tbWrapper = tbWrapper.replace(',\n\t|-INTERFACE-|','')
         tbWrapper = tbWrapper.replace(',\n\t\t|-CONNECTIONS-|','')
 
-        wrapper_file = open( self.name + "_wrapper.sv", "wt")
+        wrapper_file = open(outputdir + '/' + self.name + "_wrapper.sv", "wt")
         n = wrapper_file.write(tbWrapper)
         wrapper_file.close()
 
-    def writeTop(self):
-        with open('../src/templates/top.tb', 'r') as file:
+    def writeTop(self, outputdir):
+        with open(os.path.dirname(os.path.realpath(__file__)) + '/../src/templates/top.tb', 'r') as file:
             tbTop=file.read()
 
         tbTop = tbTop.replace('|-PACKAGE-|', self.name)
@@ -632,17 +632,19 @@ class Module:
         tbTop = tbTop.replace('\n\n', '\n')
 
 
-        top_file = open( self.name + "_top.sv", "wt")
+        top_file = open(outputdir + '/' + self.name + "_top.sv", "wt")
         n = top_file.write(tbTop)
         top_file.close()
 
 class Parser:
 
-    def __init__(self, name):
+    def __init__(self, name, inputfile, outputdir):
         self.name = name
+        self.inputfile = inputfile
+        self.outputdir = outputdir
 
     def parse(self):
-        with open('../scripts/test.xtb', 'r') as file:
+        with open(self.inputfile, 'r') as file:
             tbConfig=file.read()
 
         tbConfig_Split = "".join([s for s in tbConfig.splitlines(True) if s.strip("\r\n")])
@@ -1108,14 +1110,14 @@ class Parser:
         for uAgent in list_agent:
             env.addAgent(uAgent)
 
-        env.writeEnv()
-        env.scoreboard.writeScoreboard()
+        env.writeEnv(self.outputdir)
+        env.scoreboard.writeScoreboard(self.outputdir)
 
         for refmod in env.scoreboard.refmod:
-            refmod.writeRefmod()
+            refmod.writeRefmod(self.outputdir)
 
         for agent in env.agent:
-            agent.writeAgentAll()
+            agent.writeAgentAll(self.outputdir)
 
         # Creating Tests and Sequences
 
@@ -1182,10 +1184,10 @@ class Parser:
 
     
         for sequence in list_sequence:
-            sequence.writeSequence()
+            sequence.writeSequence(self.outputdir)
         
         for test in list_test:
-            test.writeTest()
+            test.writeTest(self.outputdir)
 
         Dut = Module(moduleName)
         
@@ -1204,8 +1206,8 @@ class Parser:
 
         Dut.addEnv(env)
 
-        Dut.writeWrapper()
-        Dut.writeTop()
+        Dut.writeWrapper(self.outputdir)
+        Dut.writeTop(self.outputdir)
 
 
 def display_title_bar():
@@ -1230,88 +1232,62 @@ def display_title_bar():
     print(Fore.BLUE + "# MIT License                                   ")
     print(Fore.BLUE + "# Copyright: Copyright (c) 2020, XGeneratorTB")
     print(Fore.BLUE + "# Credits: ")
-    print(Fore.BLUE + "# Version: 0.0.0")
+    print(Fore.BLUE + "# Version: 0.1")
     print(Fore.BLUE + "# Maintainer: Jose Iuri Barbosa de Brio")
     print(Fore.BLUE + "# Email: jose.brito@embedded.ufcg.edu.br")
     print(Fore.BLUE + "# Status: In Progress")
     print(Fore.BLUE + "################################################\n\n")
 
 
-def main():
+def main(argv):    
+
+    inputfile = ''
+    outputdir = ''
+
+    try:
+      opts, args = getopt.getopt(argv,"hi:o:",["ifile=","odir="])
+    except getopt.GetoptError:
+      print ('xgtb.py -i <inputfile> -o <outputdir>')
+      sys.exit(2)
+
+    for opt, arg in opts:
+      if opt == '-h':
+         print ('xgtb.py -i <inputfile> -o <outputdir>')
+         sys.exit()
+      elif opt in ("-i", "--ifile"):
+         inputfile = arg
+      elif opt in ("-o", "--ofile"):
+         outputdir = arg
+        
+    verification_path =  Path(outputdir)
+
+    verification_path = verification_path / 'verification'
+    Path(verification_path).mkdir(parents=True, exist_ok=True)
+    doc_path = verification_path / 'docs'
+    Path(doc_path).mkdir(parents=True, exist_ok=True)
+    tb_path = verification_path / 'tb'
+    Path(tb_path).mkdir(parents=True, exist_ok=True)
+
+    Path(verification_path / 'logs').mkdir(parents=True, exist_ok=True)
+    Path(verification_path / 'reports').mkdir(parents=True, exist_ok=True)
+    Path(verification_path / 'scripts').mkdir(parents=True, exist_ok=True)
+
+    Path(verification_path / 'scripts' / 'gatesim').mkdir(parents=True, exist_ok=True)
+    Path(verification_path / 'scripts' / 'rtlsim').mkdir(parents=True, exist_ok=True)
+    Path(verification_path / 'scripts' / 'verif_manager').mkdir(parents=True, exist_ok=True)
+
+    Path(verification_path / 'src').mkdir(parents=True, exist_ok=True)
+    Path(verification_path / 'vplan').mkdir(parents=True, exist_ok=True)
+    Path(verification_path / 'workspace').mkdir(parents=True, exist_ok=True)
+
     display_title_bar()
-
-    # uSignal1 = Signal('in_data', 'logic [8]', 'input')
-    # uSignal_add = Signal('out_data', 'logic [8]', 'output')
-
-    # uSignal1.addConnection('in_data')
-    # uSignal_add.addConnection('out_data') 
-
-    # clock = Clock('clock', 90)
-    # reset = Reset('reset', 3e12, 180)
-
-    # uInterface = Interface('agentDummy', 'agtDummy' , uSignal1, clock, reset)
-
-    # uInterface.addSignal(signal=uSignal_add)
-
-    # dummyField = Field('in_data', 'int')
-    # dummyField2 = Field('out_data', 'int')
-    # dummyTransac = Transaction('dummyTransa', dummyField)
-
-    # dummyTransac.addField(dummyField2)
-
-    # uAgent = Agent( 'agentDummy', 'instanceDummy', uInterface, dummyTransac, '', '', 'bidirectional', 'dummyRfm', 'dummyComp')
     
-    # output_port = Port('comp', 'dummyComp', 'dummyRfm', dummyTransac, 1)
-    # output_port_int = Port('rfm2', 'dummyRfm2', 'dummyRfm', dummyTransac, 0)
-    # output_port2 = Port('comp2', 'dummyComp2', 'dummyRfm2', dummyTransac, 1)
-
-    # comp = Comparator('comp', 'dummyComp', dummyTransac)
-    
-    # refmod = Refmod ('dummyRefmod', 'dummyRfm', '', output_port, 'dummyComp')
-
-    # refmod.addPortOut(output_port_int)
-
-    # comp2 = Comparator('comp2', 'dummyComp2', dummyTransac)
-    
-    # refmod2 = Refmod ('dummyRefmod2', 'dummyRfm2', '', output_port2, 'dummyComp2')
-
-    # scoreboard = Scoreboard('dummyScoreboard', 'dummyScb', comp, refmod)
-    # scoreboard.addComp(comp2)
-    # scoreboard.addRefmod(refmod2)
-
-    # env = Env('dummyEnv', 'env', [], uAgent, scoreboard)
-    
-    # env.writeEnv()
-    # env.scoreboard.writeScoreboard()
-    # for refmod in env.scoreboard.refmod:
-    #     refmod.writeRefmod()
-
-    # sequence = Sequence('dummy', uAgent, dummyTransac)
-    # test = Test(env, 'dummyT')
-
-    # test.addSequence(sequence)
-
-    # sequence.writeSequence()
-    # test.writeTest()
-
-    # dummyDut = Module('dummyDut')
-
-    # dummyDut.addClock(clock)
-    # dummyDut.addReset(reset)
-    # dummyDut.addInterface(uInterface)
-    # dummyDut.addSignal(uSignal1)
-    # dummyDut.addSignal(uSignal_add)
-    # dummyDut.addEnv(env)
-
-    # dummyDut.writeWrapper()
-    # dummyDut.writeTop()
-
-    uParser = Parser('Parser')
+    outputdir = outputdir + '/verification/tb'
+    print(outputdir)
+    uParser = Parser('Parser', inputfile, outputdir)
 
     uParser.parse()
 
 
-
-
 if __name__== "__main__" :
-    main()
+    main(sys.argv[1:])
