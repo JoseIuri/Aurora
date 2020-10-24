@@ -1,5 +1,5 @@
 ######################################################################
-#  Project           : Automatic Testbench Ceator
+#  Project           : XGeneratorTB - Automatic Testbench Ceator
 #
 #  File Name         : setup.py
 #
@@ -30,7 +30,7 @@ class Signal:
         self.name = name
         self.type = type
         self.io = io
-    
+
     def addConnection (self, connect):
         self.connect = connect
 
@@ -160,7 +160,7 @@ class Agent:
                 tbAgent = tbAgent.replace('mon.ap_req.connect(m_coverage.collected_port);', '//OUTPUT COVERAGE')
             else:
                 pass
-            
+
 
             agent_file = open(outputdir + '/' + self.name + "_agent.sv", "wt")
             n = agent_file.write(tbAgent)
@@ -219,7 +219,7 @@ class Agent:
             coverage_file = open(outputdir + '/' + self.name + "_coverage.sv", "wt")
             n = coverage_file.write(tbCoverage)
             coverage_file.close()
-        
+
         def writeAgentAll(self, outputdir):
             self.writeInterface(outputdir)
             self.writeTransaction(outputdir)
@@ -341,7 +341,7 @@ class Scoreboard:
 
         for idx,uComp in enumerate(self.comp):
             tbScoreboard = tbScoreboard.replace('|-COMP-|', uComp.name + ' ' +  uComp.instance  + ';\n\t|-COMP-|')
-        
+
         for idx,uPort in enumerate(self.port):
             tbScoreboard = tbScoreboard.replace('|-PORTS-|', 'uvm_analysis_port #(' + uPort.transaction.name + ') ' + uPort.origin + '_to_' + uPort.direction + ';\n\t|-PORTS-|')
 
@@ -366,7 +366,7 @@ class Scoreboard:
                 if uPort.direction == uRefmod.instance:
                     port_aux = Port('rfm_in', uPort.direction, uPort.origin , uPort.transaction, 0)
                     self.refmod[idy].addPortIn(port_aux)
-        
+
         for idx,uRefmod in enumerate(self.refmod):
             for idz, uPort_out in enumerate(uRefmod.port_out):
                 if (uPort_out.endComp == 0):
@@ -529,7 +529,7 @@ class Module:
         self.signal = []
         self.interface = []
         self.env = []
-    
+
     def addSignal(self, signal):
         self.signal.append(signal)
 
@@ -538,17 +538,17 @@ class Module:
 
     def addClock(self, clock):
         self.clock.append(clock)
-    
+
     def addReset(self, reset):
         self.reset.append(reset)
-    
+
     def addEnv(self, env):
         self.env.append(env)
 
     def writeWrapper(self, outputdir):
         with open(os.path.dirname(os.path.realpath(__file__)) + '/../src/templates/wrapper.tb', 'r') as file:
             tbWrapper=file.read()
-        
+
         tbWrapper = tbWrapper.replace('|-MODULE-|', self.name)
 
         for idx,uInterface in enumerate(self.interface):
@@ -589,7 +589,7 @@ class Module:
             tbTop = tbTop.replace('|-CLOCK-|', 'logic ' + uClock.name +';\n\t|-CLOCK-|')
             tbTop = tbTop.replace('|-CLOCK_PERIOD-|', 'localparam P_' + uClock.name.upper() + ' = ' + str(uClock.period) +'ns;\n\t|-CLOCK_PERIOD-|')
             tbTop = tbTop.replace('|-CLOCK_CH-|', 'always #(P_' + uClock.name.upper() + '/2) ~' + uClock.name +';\n\t|-CLOCK_CH-|')
-        
+
         for idx,uReset in enumerate(self.reset):
             tbTop = tbTop.replace('|-RESET-|', 'logic ' + uReset.name +';\n\t\t|-RESET-|')
             tbTop = tbTop.replace('|-RESET_PERIOD-|', 'localparam P_' + uReset.name.upper() + ' = ' + str(uReset.period) + 'ns;\n\t|-RESET_PERIOD-|')
@@ -600,7 +600,7 @@ class Module:
             + uInterface.clock.name + '(' + uInterface.clock.name + '), .' + \
             uInterface.reset.name + '(' + uInterface.reset.name + ')\n\t);'+ '\n\t\t|-INTERFACE-|')
             tbTop = tbTop.replace('|-INTERFACE_CONNECTION-|', '.' + uInterface.instance + '_if_top (' + uInterface.instance + '_if)' +',\n\t\t|-INTERFACE_CONNECTION-|')
-        
+
         for idx, uClock in enumerate(self.clock):
             tbTop = tbTop.replace('|-INTERFACE_CONNECTION-|', '.' + uClock.name + '.(' + uClock.name + ')' +',\n\t\t|-INTERFACE_CONNECTION-|')
             tbTop = tbTop.replace('|-INITIAL_CLOCK-|', uClock.name + ' = 0;' +'\n\t\t|-INITIAL_CLOCK-|')
@@ -614,7 +614,7 @@ class Module:
                         'uvm_config_db#(virtual ' + uInterface.name + ')::set(uvm_root::get(), "*", "' \
                          + uInterface.instance + '_vif", ' \
                          + uInterface.instance + '_if_top)' +';\n\t\t|-INTERFACE_CDB-|')
-        
+
 
 
         #CLEANUP
@@ -654,8 +654,7 @@ endpackage""".format(MODULE=self.name)
             f.extend(filenames)
 
         for filename in f:
-            if '_top.sv' not in filename and '_wrapper.sv' not in filename:
-                print(filename)
+            if '_top.sv' not in filename and '_wrapper.sv' not in filename and '_interface.sv' not in filename:
                 pkg = pkg.replace('|-FILES-|', '`include "' + filename +'"\n\t|-FILES-|')
 
         pkg = pkg.replace('|-FILES-|', '')
@@ -685,7 +684,7 @@ class Parser:
         tbSplit_field = []
         tbSplit_clock = []
         tbSplit_reset = []
-        tbSplit_interface = [] 
+        tbSplit_interface = []
         tbSplit_transa = []
         tbSplit_refmod = []
         tbSplit_module = []
@@ -753,12 +752,12 @@ class Parser:
         list_field = []
         list_clock = []
         list_reset = []
-        list_interface = [] 
+        list_interface = []
         list_transa = []
         list_refmod = []
         list_test = []
         list_sequence = []
-        
+
         for line in tbSplit_module:
             if 'module' in line and '=' not in line:
                 auxName = ''
@@ -767,7 +766,7 @@ class Parser:
                 string = line.split("=", 1)
                 auxName = string[1]
                 auxName = auxName.replace(" ","")
-            
+
             if '}' in line:
                 moduleName = auxName
 
@@ -785,7 +784,7 @@ class Parser:
                 string = line.split("=", 1)
                 auxPeriod = string[1]
                 auxPeriod = auxPeriod.replace(" ","")
-            
+
             if '}' in line:
                 auxClock = Clock(auxName, auxPeriod)
                 list_clock.append(auxClock)
@@ -805,7 +804,7 @@ class Parser:
                 string = line.split("=", 1)
                 auxPeriod = string[1]
                 auxPeriod = auxPeriod.replace(" ","")
-            
+
             if 'duration' in line:
                 string = line.split("=", 1)
                 auxDuration = string[1]
@@ -831,17 +830,17 @@ class Parser:
                 string = line.split("=", 1)
                 auxType = string[1]
                 auxType = auxType.replace(" ","")
-            
+
             if 'io' in line:
                 string = line.split("=", 1)
                 auxIo = string[1]
                 auxIo = auxIo.replace(" ","")
-            
+
             if 'connect' in line:
                 string = line.split("=", 1)
                 auxConnect = string[1]
                 auxConnect = auxConnect.replace(" ","")
-            
+
             if '}' in line:
                 auxSignal = Signal(auxName, auxType, auxIo)
                 auxSignal.addConnection(auxConnect)
@@ -861,8 +860,8 @@ class Parser:
                 string = line.split("=", 1)
                 auxType = string[1]
                 auxType = auxType.replace(" ","")
-            
-            
+
+
             if (auxName is not 'NONE') and (auxType is not 'NONE'):
                 auxField = Field(auxName, auxType)
                 list_field.append(auxField)
@@ -872,7 +871,7 @@ class Parser:
             if 'interface' in line and '=' not in line:
                 auxName = ''
                 auxInstance = ''
-                auxSignal_list = []                
+                auxSignal_list = []
 
             if 'name' in line:
                 string = line.split("=", 1)
@@ -903,7 +902,7 @@ class Parser:
                     if (uReset.name == auxReset_name):
                         auxReset = uReset
                         break
-            
+
             if 'signal' in line:
                 string = line.split("=", 1)
                 auxSignal_name = string[1]
@@ -915,8 +914,8 @@ class Parser:
                         break
 
                 auxSignal_list.append(auxSignal)
-                
-            
+
+
             if '}' in line:
 
                 auxInterface = Interface(auxName, auxInstance, auxClock, auxReset)
@@ -924,19 +923,19 @@ class Parser:
                     auxInterface.addSignal(uSignal)
 
                 list_interface.append(auxInterface)
-        
+
         for line in tbSplit_transa:
 
             if 'transaction' in line and '=' not in line:
                 auxName = ''
-                auxField_list = []                
+                auxField_list = []
 
             if 'name' in line:
                 string = line.split("=", 1)
                 auxName = string[1]
                 auxName = auxName.replace(" ","")
-            
-            
+
+
             if 'field' in line:
                 string = line.split("=", 1)
                 auxField_name = string[1]
@@ -948,8 +947,8 @@ class Parser:
                         break
 
                 auxField_list.append(auxField)
-                
-            
+
+
             if '}' in line:
 
                 auxTransaction = Transaction(auxName)
@@ -968,7 +967,7 @@ class Parser:
                 string = line.split("=", 1)
                 auxName = string[1]
                 auxName = auxName.replace(" ","")
-            
+
             if 'instance' in line:
                 string = line.split("=", 1)
                 auxInstance = string[1]
@@ -988,7 +987,7 @@ class Parser:
 
                 auxComp = Comparator(auxName, auxInstance, auxTransaction)
                 list_comp.append(auxComp)
-            
+
         for line in tbSplit_refmod:
 
             if 'refmod' in line and '=' not in line:
@@ -1000,12 +999,12 @@ class Parser:
                 string = line.split("=", 1)
                 auxName = string[1]
                 auxName = auxName.replace(" ","")
-            
+
             if 'instance' in line:
                 string = line.split("=", 1)
                 auxInstance = string[1]
                 auxInstance = auxInstance.replace(" ","")
-            
+
             if 'refmod_policy' in line:
                 string = line.split("=", 1)
                 auxRefmod_policy = string[1]
@@ -1015,7 +1014,7 @@ class Parser:
                 string = line.split("=", 1)
                 auxComp = string[1]
                 auxComp = auxComp.replace(" ","")
-            
+
             if 'connect' in line:
                 string = line.split("=", 1)
                 auxConnect_name = string[1]
@@ -1044,14 +1043,14 @@ class Parser:
                 else:
                     for idx, uConnect in enumerate(auxPort_out):
                         auxRfm.addPortOut(uConnect)
-                
+
                 list_refmod.append(auxRfm)
 
         for line in tbSplit_agent:
 
             if 'agent' in line and '=' not in line:
                 auxName = ''
-                auxInstance = ''          
+                auxInstance = ''
 
             if 'name' in line:
                 string = line.split("=", 1)
@@ -1067,7 +1066,7 @@ class Parser:
                 string = line.split("=", 1)
                 auxType = string[1]
                 auxType = auxType.replace(" ","")
-            
+
             if 'driver_policy' in line:
                 string = line.split("=", 1)
                 auxDriver_policy = string[1]
@@ -1087,7 +1086,7 @@ class Parser:
                     if (uTransaction.name == (auxTransaction_name + '_transaction')):
                         auxTransaction = uTransaction
                         break
-            
+
             if 'interface' in line:
                 string = line.split("=", 1)
                 auxInterface_name = string[1]
@@ -1096,13 +1095,13 @@ class Parser:
                 for idx,uInterface in enumerate(list_interface):
                     if (uInterface.name == auxInterface_name):
                         auxInterface = uInterface
-                        break 
-            
+                        break
+
             if 'refmod' in line:
                 string = line.split("=", 1)
                 auxRefmod_name = string[1]
                 auxRefmod_name = auxRefmod_name.replace(" ","")
-            
+
             if 'comp' in line:
                 string = line.split("=", 1)
                 auxComp_name = string[1]
@@ -1121,7 +1120,7 @@ class Parser:
                     auxAgent.setCompConn(auxComp_name)
 
                 list_agent.append(auxAgent)
-        
+
 
         # Creating ENV
 
@@ -1132,7 +1131,7 @@ class Parser:
 
         for uRefmod in list_refmod:
             scoreboard.addRefmod(uRefmod)
-        
+
         env = Env(moduleName, 'env', [], scoreboard)
 
         for uAgent in list_agent:
@@ -1167,7 +1166,7 @@ class Parser:
                     if (uTransaction.name == (auxTransaction_name + '_transaction')):
                         auxTransaction = uTransaction
                         break
-            
+
             if 'agent' in line:
                 string = line.split("=", 1)
                 auxAgent_name = string[1]
@@ -1177,7 +1176,7 @@ class Parser:
                     if (uAgent.name == auxAgent_name):
                         auxAgent = uAgent
                         break
-            
+
             if '}' in line:
                 auxSequence = Sequence(auxName, auxAgent, auxTransaction)
                 list_sequence.append(auxSequence)
@@ -1202,35 +1201,35 @@ class Parser:
                     if (uSequence.name == (auxSequence_name + '_sequence')):
                         auxSequence.append(uSequence)
                         break
-            
+
             if '}' in line:
                 auxTest= Test(env, auxName)
                 for uSequence in auxSequence:
                     auxTest.addSequence(uSequence)
-                
+
                 list_test.append(auxTest)
 
-    
+
         for sequence in list_sequence:
             sequence.writeSequence(self.outputdir)
-        
+
         for test in list_test:
             test.writeTest(self.outputdir)
 
         Dut = Module(moduleName)
-        
+
         for uClock in list_clock:
             Dut.addClock(uClock)
-        
+
         for uReset in list_reset:
             Dut.addReset(uReset)
 
         for uInterface in list_interface:
             Dut.addInterface(uInterface)
 
-        for uSignal in list_signal:    
+        for uSignal in list_signal:
             Dut.addSignal(uSignal)
-        
+
 
         Dut.addEnv(env)
 
@@ -1271,7 +1270,7 @@ def display_title_bar():
     print(Fore.BLUE + "################################################\n\n")
 
 
-def main(argv):    
+def main(argv):
 
     inputfile = ''
     outputdir = ''
@@ -1290,8 +1289,10 @@ def main(argv):
          inputfile = arg
       elif opt in ("-o", "--ofile"):
          outputdir = arg
-        
+
     verification_path =  Path(outputdir)
+
+    display_title_bar()
 
     verification_path = verification_path / 'verification'
     Path(verification_path).mkdir(parents=True, exist_ok=True)
@@ -1312,12 +1313,14 @@ def main(argv):
     Path(verification_path / 'vplan').mkdir(parents=True, exist_ok=True)
     Path(verification_path / 'workspace').mkdir(parents=True, exist_ok=True)
 
-    display_title_bar()
-    
+    print(Fore.BLUE + "# GENERATING DIRECTORIES IN " + str(verification_path) + "\n")
+    print(Fore.BLUE + "################################################\n\n")
+
     outputdir = outputdir + '/verification/tb'
-    print(outputdir)
     uParser = Parser('Parser', inputfile, outputdir)
 
+    print(Fore.BLUE + "# GENERATING FILES \n")
+    print(Fore.BLUE + "################################################\n\n")
     uParser.parse()
 
 
