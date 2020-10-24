@@ -1,5 +1,5 @@
 ######################################################################
-#  Project           : Automatic Testbench Ceator
+#  Project           : XGeneratorTB - Automatic Testbench Ceator
 #
 #  File Name         : setup.py
 #
@@ -10,9 +10,9 @@
 ######################################################################
 
 import os
-import sys
+import sys, getopt
 from colorama import Fore
-import pathlib as path
+from pathlib import Path
 
 class Clock:
     def __init__(self, name, period):
@@ -30,7 +30,7 @@ class Signal:
         self.name = name
         self.type = type
         self.io = io
-    
+
     def addConnection (self, connect):
         self.connect = connect
 
@@ -92,9 +92,9 @@ class Agent:
         def setCompConn(self, comp):
             self.comp = comp
 
-        def writeInterface(self):
+        def writeInterface(self, outputdir):
 
-            with open('../src/templates/general_agent/general_interface.tb', 'r') as file:
+            with open(os.path.dirname(os.path.realpath(__file__)) + '/../src/templates/general_agent/general_interface.tb', 'r') as file:
                 tbInterface=file.read()
 
             tbInterface = tbInterface.replace('|-INTERFACE-|', self.interface.name)
@@ -111,13 +111,13 @@ class Agent:
             # Cleaning residual tags
             tbInterface = tbInterface.replace('|-SIGNAL_NAME-|', '')
 
-            interface_file = open( self.interface.name + ".sv", "wt")
+            interface_file = open(outputdir + '/' + self.interface.name + ".sv", "wt")
             n = interface_file.write(tbInterface)
             interface_file.close()
 
-        def writeTransaction(self):
+        def writeTransaction(self, outputdir):
 
-            with open('../src/templates/general_agent/general_transaction.tb', 'r') as file:
+            with open(os.path.dirname(os.path.realpath(__file__)) + '/../src/templates/general_agent/general_transaction.tb', 'r') as file:
                 tbTransaction=file.read()
 
             tbTransaction = tbTransaction.replace('|-TRANSACTION-|', self.transaction.name)
@@ -137,13 +137,13 @@ class Agent:
             tbTransaction = tbTransaction.replace(', |-FIELD_NAME_S-|,', '')
 
 
-            transaction_file = open( self.name + "_transaction.sv", "wt")
+            transaction_file = open(outputdir + '/' + self.name + "_transaction.sv", "wt")
             n = transaction_file.write(tbTransaction)
             transaction_file.close()
 
-        def writeAgent(self):
+        def writeAgent(self, outputdir):
 
-            with open('../src/templates/general_agent/general_agent.tb', 'r') as file:
+            with open(os.path.dirname(os.path.realpath(__file__)) + '/../src/templates/general_agent/general_agent.tb', 'r') as file:
                 tbAgent=file.read()
 
             tbAgent = tbAgent.replace('|-AGENT-|', self.name)
@@ -160,14 +160,14 @@ class Agent:
                 tbAgent = tbAgent.replace('mon.ap_req.connect(m_coverage.collected_port);', '//OUTPUT COVERAGE')
             else:
                 pass
-            
 
-            agent_file = open( self.name + "_agent.sv", "wt")
+
+            agent_file = open(outputdir + '/' + self.name + "_agent.sv", "wt")
             n = agent_file.write(tbAgent)
             agent_file.close()
 
-        def writeDriver(self):
-            with open('../src/templates/general_agent/general_driver.tb', 'r') as file:
+        def writeDriver(self, outputdir):
+            with open(os.path.dirname(os.path.realpath(__file__)) + '/../src/templates/general_agent/general_driver.tb', 'r') as file:
                 tbDriver=file.read()
 
             tbDriver = tbDriver.replace('|-AGENT-|', self.name)
@@ -177,12 +177,12 @@ class Agent:
 
             tbDriver = tbDriver.replace('|-DRIVER_POLICY-|', self.driver_policy.replace('\n','\n\t'))
 
-            driver_file = open( self.name + "_driver.sv", "wt")
+            driver_file = open(outputdir + '/' + self.name + "_driver.sv", "wt")
             n = driver_file.write(tbDriver)
             driver_file.close()
 
-        def writeMonitor(self):
-            with open('../src/templates/general_agent/general_monitor.tb', 'r') as file:
+        def writeMonitor(self, outputdir):
+            with open(os.path.dirname(os.path.realpath(__file__)) + '/../src/templates/general_agent/general_monitor.tb', 'r') as file:
                 tbMonitor=file.read()
 
             tbMonitor = tbMonitor.replace('|-AGENT-|', self.name)
@@ -204,30 +204,30 @@ class Agent:
 
             tbMonitor = tbMonitor.replace('|-TRANSACTION-|', self.transaction.name)
 
-            monitor_file = open( self.name + "_monitor.sv", "wt")
+            monitor_file = open(outputdir + '/' + self.name + "_monitor.sv", "wt")
             n = monitor_file.write(tbMonitor)
             monitor_file.close()
 
-        def writeCoverage(self):
+        def writeCoverage(self, outputdir):
 
-            with open('../src/templates/general_agent/general_coverage.tb', 'r') as file:
+            with open(os.path.dirname(os.path.realpath(__file__)) + '/../src/templates/general_agent/general_coverage.tb', 'r') as file:
                 tbCoverage=file.read()
 
             tbCoverage = tbCoverage.replace('|-AGENT-|', self.name)
             tbCoverage = tbCoverage.replace('|-TRANSACTION-|', self.transaction.name)
 
-            coverage_file = open( self.name + "_coverage.sv", "wt")
+            coverage_file = open(outputdir + '/' + self.name + "_coverage.sv", "wt")
             n = coverage_file.write(tbCoverage)
             coverage_file.close()
-        
-        def writeAgentAll(self):
-            self.writeInterface()
-            self.writeTransaction()
-            self.writeAgent()
-            self.writeDriver()
-            self.writeMonitor()
-            self.writeCoverage()
-            self.writeAgent()
+
+        def writeAgentAll(self, outputdir):
+            self.writeInterface(outputdir)
+            self.writeTransaction(outputdir)
+            self.writeAgent(outputdir)
+            self.writeDriver(outputdir)
+            self.writeMonitor(outputdir)
+            self.writeCoverage(outputdir)
+            self.writeAgent(outputdir)
 
 class Port:
     def __init__(self, name, direction, origin, transaction, endComp):
@@ -259,8 +259,8 @@ class Refmod:
     def addDestination (self, destination):
         self.destination.append(destination)
 
-    def writeRefmod(self):
-        with open('../src/templates/scoreboard/refmod.tb', 'r') as file:
+    def writeRefmod(self, outputdir):
+        with open(os.path.dirname(os.path.realpath(__file__)) + '/../src/templates/scoreboard/refmod.tb', 'r') as file:
             tbRefmod=file.read()
 
         tbRefmod = tbRefmod.replace('|-REFMOD-|', self.name)
@@ -299,7 +299,7 @@ class Refmod:
         tbRefmod = tbRefmod.replace('|-OUTPUT_PORT-|', '')
         tbRefmod = tbRefmod.replace('|-PORT_CREATION-|', '')
 
-        refmod_file = open( self.name + ".sv", "wt")
+        refmod_file = open(outputdir + '/' + self.name + ".sv", "wt")
         n = refmod_file.write(tbRefmod)
         refmod_file.close()
 
@@ -329,9 +329,9 @@ class Scoreboard:
     def addRefmod(self, refmod):
         self.refmod.append(refmod)
 
-    def writeScoreboard(self):
+    def writeScoreboard(self, outputdir):
 
-        with open('../src/templates/scoreboard/scoreboard.tb', 'r') as file:
+        with open(os.path.dirname(os.path.realpath(__file__)) + '/../src/templates/scoreboard/scoreboard.tb', 'r') as file:
             tbScoreboard=file.read()
 
         tbScoreboard = tbScoreboard.replace('|-SCOREBOARD-|', self.name)
@@ -341,7 +341,7 @@ class Scoreboard:
 
         for idx,uComp in enumerate(self.comp):
             tbScoreboard = tbScoreboard.replace('|-COMP-|', uComp.name + ' ' +  uComp.instance  + ';\n\t|-COMP-|')
-        
+
         for idx,uPort in enumerate(self.port):
             tbScoreboard = tbScoreboard.replace('|-PORTS-|', 'uvm_analysis_port #(' + uPort.transaction.name + ') ' + uPort.origin + '_to_' + uPort.direction + ';\n\t|-PORTS-|')
 
@@ -366,7 +366,7 @@ class Scoreboard:
                 if uPort.direction == uRefmod.instance:
                     port_aux = Port('rfm_in', uPort.direction, uPort.origin , uPort.transaction, 0)
                     self.refmod[idy].addPortIn(port_aux)
-        
+
         for idx,uRefmod in enumerate(self.refmod):
             for idz, uPort_out in enumerate(uRefmod.port_out):
                 if (uPort_out.endComp == 0):
@@ -392,7 +392,7 @@ class Scoreboard:
         tbScoreboard = tbScoreboard.replace('|-PORTS_CREATION-|', '')
         tbScoreboard = tbScoreboard.replace('|-CONNECTIONS-|', '')
 
-        scoreboard_file = open( self.name + "_scoreboard.sv", "wt")
+        scoreboard_file = open(outputdir + '/' + self.name + "_scoreboard.sv", "wt")
         n = scoreboard_file.write(tbScoreboard)
         scoreboard_file.close()
 
@@ -413,9 +413,9 @@ class Env:
     def addAgent(self, agent):
         self.agent.append(agent)
 
-    def writeEnv(self):
+    def writeEnv(self, outputdir):
 
-        with open('../src/templates/env.tb', 'r') as file:
+        with open(os.path.dirname(os.path.realpath(__file__)) + '/../src/templates/env.tb', 'r') as file:
             tbEnv=file.read()
 
         tbEnv = tbEnv.replace('|-ENV-|', self.name)
@@ -458,7 +458,7 @@ class Env:
         tbEnv = tbEnv.replace('|-CONNECTIONS-|', '')
 
 
-        env_file = open( self.name + ".sv", "wt")
+        env_file = open(outputdir + '/' + self.name + ".sv", "wt")
         n = env_file.write(tbEnv)
         env_file.close()
 
@@ -469,15 +469,15 @@ class Sequence:
         self.agent = [agent]
         self.transaction = transaction
 
-    def writeSequence(self):
+    def writeSequence(self, outputdir):
 
-            with open('../src/templates/sequence.tb', 'r') as file:
+            with open(os.path.dirname(os.path.realpath(__file__)) + '/../src/templates/sequence.tb', 'r') as file:
                 tbSequence=file.read()
 
             tbSequence = tbSequence.replace('|-SEQUENCE-|', self.name)
             tbSequence = tbSequence.replace('|-TRANSACTION-|', self.transaction.name)
 
-            sequence_file = open( self.name + ".sv", "wt")
+            sequence_file = open(outputdir + '/' + self.name + ".sv", "wt")
             n = sequence_file.write(tbSequence)
             sequence_file.close()
 
@@ -490,9 +490,9 @@ class Test:
     def addSequence(self, sequence):
         self.sequence.append(sequence)
 
-    def writeTest(self):
+    def writeTest(self, outputdir):
 
-        with open('../src/templates/test.tb', 'r') as file:
+        with open(os.path.dirname(os.path.realpath(__file__)) + '/../src/templates/test.tb', 'r') as file:
             tbTest=file.read()
 
         tbTest = tbTest.replace('|-TEST-|', self.name)
@@ -517,7 +517,7 @@ class Test:
         tbTest = tbTest.replace('|-SEQUENCE_START-|', '')
 
 
-        test_file = open( self.name + ".sv", "wt")
+        test_file = open(outputdir + '/' + self.name + ".sv", "wt")
         n = test_file.write(tbTest)
         test_file.close()
 
@@ -529,7 +529,7 @@ class Module:
         self.signal = []
         self.interface = []
         self.env = []
-    
+
     def addSignal(self, signal):
         self.signal.append(signal)
 
@@ -538,17 +538,17 @@ class Module:
 
     def addClock(self, clock):
         self.clock.append(clock)
-    
+
     def addReset(self, reset):
         self.reset.append(reset)
-    
+
     def addEnv(self, env):
         self.env.append(env)
 
-    def writeWrapper(self):
-        with open('../src/templates/wrapper.tb', 'r') as file:
+    def writeWrapper(self, outputdir):
+        with open(os.path.dirname(os.path.realpath(__file__)) + '/../src/templates/wrapper.tb', 'r') as file:
             tbWrapper=file.read()
-        
+
         tbWrapper = tbWrapper.replace('|-MODULE-|', self.name)
 
         for idx,uInterface in enumerate(self.interface):
@@ -574,12 +574,12 @@ class Module:
         tbWrapper = tbWrapper.replace(',\n\t|-INTERFACE-|','')
         tbWrapper = tbWrapper.replace(',\n\t\t|-CONNECTIONS-|','')
 
-        wrapper_file = open( self.name + "_wrapper.sv", "wt")
+        wrapper_file = open(outputdir + '/' + self.name + "_wrapper.sv", "wt")
         n = wrapper_file.write(tbWrapper)
         wrapper_file.close()
 
-    def writeTop(self):
-        with open('../src/templates/top.tb', 'r') as file:
+    def writeTop(self, outputdir):
+        with open(os.path.dirname(os.path.realpath(__file__)) + '/../src/templates/top.tb', 'r') as file:
             tbTop=file.read()
 
         tbTop = tbTop.replace('|-PACKAGE-|', self.name)
@@ -589,7 +589,7 @@ class Module:
             tbTop = tbTop.replace('|-CLOCK-|', 'logic ' + uClock.name +';\n\t|-CLOCK-|')
             tbTop = tbTop.replace('|-CLOCK_PERIOD-|', 'localparam P_' + uClock.name.upper() + ' = ' + str(uClock.period) +'ns;\n\t|-CLOCK_PERIOD-|')
             tbTop = tbTop.replace('|-CLOCK_CH-|', 'always #(P_' + uClock.name.upper() + '/2) ~' + uClock.name +';\n\t|-CLOCK_CH-|')
-        
+
         for idx,uReset in enumerate(self.reset):
             tbTop = tbTop.replace('|-RESET-|', 'logic ' + uReset.name +';\n\t\t|-RESET-|')
             tbTop = tbTop.replace('|-RESET_PERIOD-|', 'localparam P_' + uReset.name.upper() + ' = ' + str(uReset.period) + 'ns;\n\t|-RESET_PERIOD-|')
@@ -600,7 +600,7 @@ class Module:
             + uInterface.clock.name + '(' + uInterface.clock.name + '), .' + \
             uInterface.reset.name + '(' + uInterface.reset.name + ')\n\t);'+ '\n\t\t|-INTERFACE-|')
             tbTop = tbTop.replace('|-INTERFACE_CONNECTION-|', '.' + uInterface.instance + '_if_top (' + uInterface.instance + '_if)' +',\n\t\t|-INTERFACE_CONNECTION-|')
-        
+
         for idx, uClock in enumerate(self.clock):
             tbTop = tbTop.replace('|-INTERFACE_CONNECTION-|', '.' + uClock.name + '.(' + uClock.name + ')' +',\n\t\t|-INTERFACE_CONNECTION-|')
             tbTop = tbTop.replace('|-INITIAL_CLOCK-|', uClock.name + ' = 0;' +'\n\t\t|-INITIAL_CLOCK-|')
@@ -614,7 +614,7 @@ class Module:
                         'uvm_config_db#(virtual ' + uInterface.name + ')::set(uvm_root::get(), "*", "' \
                          + uInterface.instance + '_vif", ' \
                          + uInterface.instance + '_if_top)' +';\n\t\t|-INTERFACE_CDB-|')
-        
+
 
 
         #CLEANUP
@@ -632,17 +632,46 @@ class Module:
         tbTop = tbTop.replace('\n\n', '\n')
 
 
-        top_file = open( self.name + "_top.sv", "wt")
+        top_file = open(outputdir + '/' + self.name + "_top.sv", "wt")
         n = top_file.write(tbTop)
         top_file.close()
 
-class Parser:
 
+class Package:
     def __init__(self, name):
         self.name = name
 
+    def writePackage(self, outputdir):
+        pkg = """package {MODULE}_pkg;
+    `include "uvm_macros.svh"
+    import uvm_pkg::*;
+
+    |-FILES-|
+endpackage""".format(MODULE=self.name)
+
+        f = []
+        for (dirpath, dirnames, filenames) in os.walk(outputdir):
+            f.extend(filenames)
+
+        for filename in f:
+            if '_top.sv' not in filename and '_wrapper.sv' not in filename and '_interface.sv' not in filename:
+                pkg = pkg.replace('|-FILES-|', '`include "' + filename +'"\n\t|-FILES-|')
+
+        pkg = pkg.replace('|-FILES-|', '')
+
+        pkg_file = open(outputdir + '/' + self.name + "_pkg.sv", "wt")
+        n = pkg_file.write(pkg)
+        pkg_file.close()
+
+class Parser:
+
+    def __init__(self, name, inputfile, outputdir):
+        self.name = name
+        self.inputfile = inputfile
+        self.outputdir = outputdir
+
     def parse(self):
-        with open('../scripts/test.xtb', 'r') as file:
+        with open(self.inputfile, 'r') as file:
             tbConfig=file.read()
 
         tbConfig_Split = "".join([s for s in tbConfig.splitlines(True) if s.strip("\r\n")])
@@ -655,7 +684,7 @@ class Parser:
         tbSplit_field = []
         tbSplit_clock = []
         tbSplit_reset = []
-        tbSplit_interface = [] 
+        tbSplit_interface = []
         tbSplit_transa = []
         tbSplit_refmod = []
         tbSplit_module = []
@@ -723,12 +752,12 @@ class Parser:
         list_field = []
         list_clock = []
         list_reset = []
-        list_interface = [] 
+        list_interface = []
         list_transa = []
         list_refmod = []
         list_test = []
         list_sequence = []
-        
+
         for line in tbSplit_module:
             if 'module' in line and '=' not in line:
                 auxName = ''
@@ -737,7 +766,7 @@ class Parser:
                 string = line.split("=", 1)
                 auxName = string[1]
                 auxName = auxName.replace(" ","")
-            
+
             if '}' in line:
                 moduleName = auxName
 
@@ -755,7 +784,7 @@ class Parser:
                 string = line.split("=", 1)
                 auxPeriod = string[1]
                 auxPeriod = auxPeriod.replace(" ","")
-            
+
             if '}' in line:
                 auxClock = Clock(auxName, auxPeriod)
                 list_clock.append(auxClock)
@@ -775,7 +804,7 @@ class Parser:
                 string = line.split("=", 1)
                 auxPeriod = string[1]
                 auxPeriod = auxPeriod.replace(" ","")
-            
+
             if 'duration' in line:
                 string = line.split("=", 1)
                 auxDuration = string[1]
@@ -801,17 +830,17 @@ class Parser:
                 string = line.split("=", 1)
                 auxType = string[1]
                 auxType = auxType.replace(" ","")
-            
+
             if 'io' in line:
                 string = line.split("=", 1)
                 auxIo = string[1]
                 auxIo = auxIo.replace(" ","")
-            
+
             if 'connect' in line:
                 string = line.split("=", 1)
                 auxConnect = string[1]
                 auxConnect = auxConnect.replace(" ","")
-            
+
             if '}' in line:
                 auxSignal = Signal(auxName, auxType, auxIo)
                 auxSignal.addConnection(auxConnect)
@@ -831,8 +860,8 @@ class Parser:
                 string = line.split("=", 1)
                 auxType = string[1]
                 auxType = auxType.replace(" ","")
-            
-            
+
+
             if (auxName is not 'NONE') and (auxType is not 'NONE'):
                 auxField = Field(auxName, auxType)
                 list_field.append(auxField)
@@ -842,7 +871,7 @@ class Parser:
             if 'interface' in line and '=' not in line:
                 auxName = ''
                 auxInstance = ''
-                auxSignal_list = []                
+                auxSignal_list = []
 
             if 'name' in line:
                 string = line.split("=", 1)
@@ -873,7 +902,7 @@ class Parser:
                     if (uReset.name == auxReset_name):
                         auxReset = uReset
                         break
-            
+
             if 'signal' in line:
                 string = line.split("=", 1)
                 auxSignal_name = string[1]
@@ -885,8 +914,8 @@ class Parser:
                         break
 
                 auxSignal_list.append(auxSignal)
-                
-            
+
+
             if '}' in line:
 
                 auxInterface = Interface(auxName, auxInstance, auxClock, auxReset)
@@ -894,19 +923,19 @@ class Parser:
                     auxInterface.addSignal(uSignal)
 
                 list_interface.append(auxInterface)
-        
+
         for line in tbSplit_transa:
 
             if 'transaction' in line and '=' not in line:
                 auxName = ''
-                auxField_list = []                
+                auxField_list = []
 
             if 'name' in line:
                 string = line.split("=", 1)
                 auxName = string[1]
                 auxName = auxName.replace(" ","")
-            
-            
+
+
             if 'field' in line:
                 string = line.split("=", 1)
                 auxField_name = string[1]
@@ -918,8 +947,8 @@ class Parser:
                         break
 
                 auxField_list.append(auxField)
-                
-            
+
+
             if '}' in line:
 
                 auxTransaction = Transaction(auxName)
@@ -938,7 +967,7 @@ class Parser:
                 string = line.split("=", 1)
                 auxName = string[1]
                 auxName = auxName.replace(" ","")
-            
+
             if 'instance' in line:
                 string = line.split("=", 1)
                 auxInstance = string[1]
@@ -958,7 +987,7 @@ class Parser:
 
                 auxComp = Comparator(auxName, auxInstance, auxTransaction)
                 list_comp.append(auxComp)
-            
+
         for line in tbSplit_refmod:
 
             if 'refmod' in line and '=' not in line:
@@ -970,12 +999,12 @@ class Parser:
                 string = line.split("=", 1)
                 auxName = string[1]
                 auxName = auxName.replace(" ","")
-            
+
             if 'instance' in line:
                 string = line.split("=", 1)
                 auxInstance = string[1]
                 auxInstance = auxInstance.replace(" ","")
-            
+
             if 'refmod_policy' in line:
                 string = line.split("=", 1)
                 auxRefmod_policy = string[1]
@@ -985,7 +1014,7 @@ class Parser:
                 string = line.split("=", 1)
                 auxComp = string[1]
                 auxComp = auxComp.replace(" ","")
-            
+
             if 'connect' in line:
                 string = line.split("=", 1)
                 auxConnect_name = string[1]
@@ -1014,14 +1043,14 @@ class Parser:
                 else:
                     for idx, uConnect in enumerate(auxPort_out):
                         auxRfm.addPortOut(uConnect)
-                
+
                 list_refmod.append(auxRfm)
 
         for line in tbSplit_agent:
 
             if 'agent' in line and '=' not in line:
                 auxName = ''
-                auxInstance = ''          
+                auxInstance = ''
 
             if 'name' in line:
                 string = line.split("=", 1)
@@ -1037,7 +1066,7 @@ class Parser:
                 string = line.split("=", 1)
                 auxType = string[1]
                 auxType = auxType.replace(" ","")
-            
+
             if 'driver_policy' in line:
                 string = line.split("=", 1)
                 auxDriver_policy = string[1]
@@ -1057,7 +1086,7 @@ class Parser:
                     if (uTransaction.name == (auxTransaction_name + '_transaction')):
                         auxTransaction = uTransaction
                         break
-            
+
             if 'interface' in line:
                 string = line.split("=", 1)
                 auxInterface_name = string[1]
@@ -1066,13 +1095,13 @@ class Parser:
                 for idx,uInterface in enumerate(list_interface):
                     if (uInterface.name == auxInterface_name):
                         auxInterface = uInterface
-                        break 
-            
+                        break
+
             if 'refmod' in line:
                 string = line.split("=", 1)
                 auxRefmod_name = string[1]
                 auxRefmod_name = auxRefmod_name.replace(" ","")
-            
+
             if 'comp' in line:
                 string = line.split("=", 1)
                 auxComp_name = string[1]
@@ -1091,7 +1120,7 @@ class Parser:
                     auxAgent.setCompConn(auxComp_name)
 
                 list_agent.append(auxAgent)
-        
+
 
         # Creating ENV
 
@@ -1102,20 +1131,20 @@ class Parser:
 
         for uRefmod in list_refmod:
             scoreboard.addRefmod(uRefmod)
-        
+
         env = Env(moduleName, 'env', [], scoreboard)
 
         for uAgent in list_agent:
             env.addAgent(uAgent)
 
-        env.writeEnv()
-        env.scoreboard.writeScoreboard()
+        env.writeEnv(self.outputdir)
+        env.scoreboard.writeScoreboard(self.outputdir)
 
         for refmod in env.scoreboard.refmod:
-            refmod.writeRefmod()
+            refmod.writeRefmod(self.outputdir)
 
         for agent in env.agent:
-            agent.writeAgentAll()
+            agent.writeAgentAll(self.outputdir)
 
         # Creating Tests and Sequences
 
@@ -1137,7 +1166,7 @@ class Parser:
                     if (uTransaction.name == (auxTransaction_name + '_transaction')):
                         auxTransaction = uTransaction
                         break
-            
+
             if 'agent' in line:
                 string = line.split("=", 1)
                 auxAgent_name = string[1]
@@ -1147,7 +1176,7 @@ class Parser:
                     if (uAgent.name == auxAgent_name):
                         auxAgent = uAgent
                         break
-            
+
             if '}' in line:
                 auxSequence = Sequence(auxName, auxAgent, auxTransaction)
                 list_sequence.append(auxSequence)
@@ -1172,40 +1201,44 @@ class Parser:
                     if (uSequence.name == (auxSequence_name + '_sequence')):
                         auxSequence.append(uSequence)
                         break
-            
+
             if '}' in line:
                 auxTest= Test(env, auxName)
                 for uSequence in auxSequence:
                     auxTest.addSequence(uSequence)
-                
+
                 list_test.append(auxTest)
 
-    
+
         for sequence in list_sequence:
-            sequence.writeSequence()
-        
+            sequence.writeSequence(self.outputdir)
+
         for test in list_test:
-            test.writeTest()
+            test.writeTest(self.outputdir)
 
         Dut = Module(moduleName)
-        
+
         for uClock in list_clock:
             Dut.addClock(uClock)
-        
+
         for uReset in list_reset:
             Dut.addReset(uReset)
 
         for uInterface in list_interface:
             Dut.addInterface(uInterface)
 
-        for uSignal in list_signal:    
+        for uSignal in list_signal:
             Dut.addSignal(uSignal)
-        
+
 
         Dut.addEnv(env)
 
-        Dut.writeWrapper()
-        Dut.writeTop()
+        Dut.writeWrapper(self.outputdir)
+        Dut.writeTop(self.outputdir)
+
+        pkg = Package(moduleName)
+
+        pkg.writePackage(self.outputdir)
 
 
 def display_title_bar():
@@ -1230,88 +1263,66 @@ def display_title_bar():
     print(Fore.BLUE + "# MIT License                                   ")
     print(Fore.BLUE + "# Copyright: Copyright (c) 2020, XGeneratorTB")
     print(Fore.BLUE + "# Credits: ")
-    print(Fore.BLUE + "# Version: 0.0.0")
+    print(Fore.BLUE + "# Version: 0.1")
     print(Fore.BLUE + "# Maintainer: Jose Iuri Barbosa de Brio")
     print(Fore.BLUE + "# Email: jose.brito@embedded.ufcg.edu.br")
     print(Fore.BLUE + "# Status: In Progress")
     print(Fore.BLUE + "################################################\n\n")
 
 
-def main():
+def main(argv):
+
+    inputfile = ''
+    outputdir = ''
+
+    try:
+      opts, args = getopt.getopt(argv,"hi:o:",["ifile=","odir="])
+    except getopt.GetoptError:
+      print ('xgtb.py -i <inputfile> -o <outputdir>')
+      sys.exit(2)
+
+    for opt, arg in opts:
+      if opt == '-h':
+         print ('xgtb.py -i <inputfile> -o <outputdir>')
+         sys.exit()
+      elif opt in ("-i", "--ifile"):
+         inputfile = arg
+      elif opt in ("-o", "--ofile"):
+         outputdir = arg
+
+    verification_path =  Path(outputdir)
+
     display_title_bar()
 
-    # uSignal1 = Signal('in_data', 'logic [8]', 'input')
-    # uSignal_add = Signal('out_data', 'logic [8]', 'output')
+    verification_path = verification_path / 'verification'
+    Path(verification_path).mkdir(parents=True, exist_ok=True)
+    doc_path = verification_path / 'docs'
+    Path(doc_path).mkdir(parents=True, exist_ok=True)
+    tb_path = verification_path / 'tb'
+    Path(tb_path).mkdir(parents=True, exist_ok=True)
 
-    # uSignal1.addConnection('in_data')
-    # uSignal_add.addConnection('out_data') 
+    Path(verification_path / 'logs').mkdir(parents=True, exist_ok=True)
+    Path(verification_path / 'reports').mkdir(parents=True, exist_ok=True)
+    Path(verification_path / 'scripts').mkdir(parents=True, exist_ok=True)
 
-    # clock = Clock('clock', 90)
-    # reset = Reset('reset', 3e12, 180)
+    Path(verification_path / 'scripts' / 'gatesim').mkdir(parents=True, exist_ok=True)
+    Path(verification_path / 'scripts' / 'rtlsim').mkdir(parents=True, exist_ok=True)
+    Path(verification_path / 'scripts' / 'verif_manager').mkdir(parents=True, exist_ok=True)
 
-    # uInterface = Interface('agentDummy', 'agtDummy' , uSignal1, clock, reset)
+    Path(verification_path / 'src').mkdir(parents=True, exist_ok=True)
+    Path(verification_path / 'vplan').mkdir(parents=True, exist_ok=True)
+    Path(verification_path / 'workspace').mkdir(parents=True, exist_ok=True)
 
-    # uInterface.addSignal(signal=uSignal_add)
+    print(Fore.BLUE + "# GENERATING DIRECTORIES IN " + str(verification_path) + "\n")
+    print(Fore.BLUE + "################################################\n\n")
 
-    # dummyField = Field('in_data', 'int')
-    # dummyField2 = Field('out_data', 'int')
-    # dummyTransac = Transaction('dummyTransa', dummyField)
+    outputdir = outputdir + '/verification/tb'
+    uParser = Parser('Parser', inputfile, outputdir)
 
-    # dummyTransac.addField(dummyField2)
-
-    # uAgent = Agent( 'agentDummy', 'instanceDummy', uInterface, dummyTransac, '', '', 'bidirectional', 'dummyRfm', 'dummyComp')
-    
-    # output_port = Port('comp', 'dummyComp', 'dummyRfm', dummyTransac, 1)
-    # output_port_int = Port('rfm2', 'dummyRfm2', 'dummyRfm', dummyTransac, 0)
-    # output_port2 = Port('comp2', 'dummyComp2', 'dummyRfm2', dummyTransac, 1)
-
-    # comp = Comparator('comp', 'dummyComp', dummyTransac)
-    
-    # refmod = Refmod ('dummyRefmod', 'dummyRfm', '', output_port, 'dummyComp')
-
-    # refmod.addPortOut(output_port_int)
-
-    # comp2 = Comparator('comp2', 'dummyComp2', dummyTransac)
-    
-    # refmod2 = Refmod ('dummyRefmod2', 'dummyRfm2', '', output_port2, 'dummyComp2')
-
-    # scoreboard = Scoreboard('dummyScoreboard', 'dummyScb', comp, refmod)
-    # scoreboard.addComp(comp2)
-    # scoreboard.addRefmod(refmod2)
-
-    # env = Env('dummyEnv', 'env', [], uAgent, scoreboard)
-    
-    # env.writeEnv()
-    # env.scoreboard.writeScoreboard()
-    # for refmod in env.scoreboard.refmod:
-    #     refmod.writeRefmod()
-
-    # sequence = Sequence('dummy', uAgent, dummyTransac)
-    # test = Test(env, 'dummyT')
-
-    # test.addSequence(sequence)
-
-    # sequence.writeSequence()
-    # test.writeTest()
-
-    # dummyDut = Module('dummyDut')
-
-    # dummyDut.addClock(clock)
-    # dummyDut.addReset(reset)
-    # dummyDut.addInterface(uInterface)
-    # dummyDut.addSignal(uSignal1)
-    # dummyDut.addSignal(uSignal_add)
-    # dummyDut.addEnv(env)
-
-    # dummyDut.writeWrapper()
-    # dummyDut.writeTop()
-
-    uParser = Parser('Parser')
-
+    print(Fore.BLUE + "# GENERATING FILES \n")
+    print(Fore.BLUE + "################################################\n\n")
     uParser.parse()
 
 
-
-
 if __name__== "__main__" :
-    main()
+    main(sys.argv[1:])
