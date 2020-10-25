@@ -40,7 +40,7 @@ python3 ../scripts/xgtb.py -i <input_configuration_file> -o <output-directory>
 
 * **José Iuri Barbosa de Brito** - [JoseIuri](https://github.com/JoseIuri)
 
-See also the list of [contributors](https://github.com/JoseIuri/Simple_UVM/contributors) who participated in this project.
+See also the list of [contributors](https://github.com/JoseIuri/XGeneratorTB/contributors) who participated in this project.
 
 ## License
 
