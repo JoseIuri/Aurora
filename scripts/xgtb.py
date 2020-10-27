@@ -30,6 +30,7 @@ class Signal:
         self.name = name
         self.type = type
         self.io = io
+        self.connect = None
 
     def addConnection (self, connect):
         self.connect = connect
@@ -506,7 +507,7 @@ class Test:
         for idx,sequence in enumerate(self.sequence):
             tbTest = tbTest.replace('|-SEQUENCE_CREATION-|', 'seq' + str(idx) + ' = ' + sequence.name + '::create("'+ 'seq' + str(idx) +'", this)' +  ';\n\t\t|-SEQUENCE_CREATION-|')
             for agent in sequence.agent:
-                tbTest = tbTest.replace('|-SEQUENCE_START-|', 'seq' + str(idx) + '.start(env_h.' + agent.name + '.seqr)' + ';\n\t\t|-SEQUENCE_START-|')
+                tbTest = tbTest.replace('|-SEQUENCE_START-|', 'seq' + str(idx) + '.start(env_h.' + agent.isntance + '.seqr)' + ';\n\t\t|-SEQUENCE_START-|')
 
         # CLEANUP
         tbTest = tbTest.replace('|-TEST-|', '')
@@ -529,6 +530,7 @@ class Module:
         self.signal = []
         self.interface = []
         self.env = []
+        self.agent = []
 
     def addSignal(self, signal):
         self.signal.append(signal)
@@ -545,14 +547,17 @@ class Module:
     def addEnv(self, env):
         self.env.append(env)
 
+    def addAgent(self, agent):
+        self.agent.append(agent)
+
     def writeWrapper(self, outputdir):
         with open(os.path.dirname(os.path.realpath(__file__)) + '/../src/templates/wrapper.tb', 'r') as file:
             tbWrapper=file.read()
 
         tbWrapper = tbWrapper.replace('|-MODULE-|', self.name)
 
-        for idx,uInterface in enumerate(self.interface):
-            tbWrapper = tbWrapper.replace('|-INTERFACE-|', uInterface.name + ' ' + uInterface.instance + '_if' +',\n\t|-INTERFACE-|')
+        for idx,uAgent in enumerate(self.agent):
+            tbWrapper = tbWrapper.replace('|-INTERFACE-|', uAgent.interface.name + ' ' + uAgent.interface.instance + '_if' +',\n\t|-INTERFACE-|')
 
         for idx,uClock in enumerate(self.clock):
             tbWrapper = tbWrapper.replace('|-INTERFACE-|', 'input ' + uClock.name +',\n\t|-INTERFACE-|')
@@ -560,9 +565,12 @@ class Module:
         for idx,uReset in enumerate(self.reset):
             tbWrapper = tbWrapper.replace('|-INTERFACE-|', 'input ' + uReset.name +',\n\t|-INTERFACE-|')
 
-        for idx,uInterface in enumerate(self.interface):
-            for idy,busSig in enumerate(uInterface.signal):
-                    tbWrapper = tbWrapper.replace('|-CONNECTIONS-|', '.'+ busSig.name + '(' + uInterface.instance + '_if.' + busSig.name +') ' +',\n\t\t|-CONNECTIONS-|')
+        for idx,uAgent in enumerate(self.agent):
+            for idy,busSig in enumerate(uAgent.interface.signal):
+                    if busSig.connect is not None:
+                        tbWrapper = tbWrapper.replace('|-CONNECTIONS-|', '.'+ busSig.connect + '(' + uAgent.interface.instance + '_if.' + busSig.name +') ' +',\n\t\t|-CONNECTIONS-|')
+                    else:
+                        tbWrapper = tbWrapper.replace('|-CONNECTIONS-|', '.'+ busSig.name + '(' + uAgent.interface.instance + '_if.' + busSig.name +') ' +',\n\t\t|-CONNECTIONS-|')
 
         for idx,uClock in enumerate(self.clock):
             tbWrapper = tbWrapper.replace('|-CONNECTIONS-|', '.' + uClock.name + '(' + uClock.name + ')' +',\n\t\t|-CONNECTIONS-|')
@@ -595,11 +603,11 @@ class Module:
             tbTop = tbTop.replace('|-RESET_PERIOD-|', 'localparam P_' + uReset.name.upper() + ' = ' + str(uReset.period) + 'ns;\n\t|-RESET_PERIOD-|')
             tbTop = tbTop.replace('|-RESET_CH-|', 'always \n\t\t#(P_' + uReset.name.upper() + ') ' + uReset.name +' = 0; '+ '\n\t\t#(' + str(uReset.duration) + ') = 1;' +'\n\t|-RESET_CH-|')
 
-        for idx, uInterface in enumerate(self.interface):
-            tbTop = tbTop.replace('|-INTERFACE-|', uInterface.name + ' ' + uInterface.instance + '_if_top (\n\t\t.' \
-            + uInterface.clock.name + '(' + uInterface.clock.name + '), .' + \
-            uInterface.reset.name + '(' + uInterface.reset.name + ')\n\t);'+ '\n\t\t|-INTERFACE-|')
-            tbTop = tbTop.replace('|-INTERFACE_CONNECTION-|', '.' + uInterface.instance + '_if_top (' + uInterface.instance + '_if)' +',\n\t\t|-INTERFACE_CONNECTION-|')
+        for idx, uAgent in enumerate(self.agent):
+            tbTop = tbTop.replace('|-INTERFACE-|', uAgent.interface.name + ' ' + uAgent.interface.instance + '_if_top (\n\t\t.' \
+            + uAgent.interface.clock.name + '(' + uAgent.interface.clock.name + '), .' + \
+            uAgent.interface.reset.name + '(' + uAgent.interface.reset.name + ')\n\t);'+ '\n\t\t|-INTERFACE-|')
+            tbTop = tbTop.replace('|-INTERFACE_CONNECTION-|', '.' + uAgent.interface.instance + '_if_top (' + uAgent.interface.instance + '_if)' +',\n\t\t|-INTERFACE_CONNECTION-|')
 
         for idx, uClock in enumerate(self.clock):
             tbTop = tbTop.replace('|-INTERFACE_CONNECTION-|', '.' + uClock.name + '.(' + uClock.name + ')' +',\n\t\t|-INTERFACE_CONNECTION-|')
@@ -609,11 +617,10 @@ class Module:
             tbTop = tbTop.replace('|-INTERFACE_CONNECTION-|', '.' + uReset.name + '.(' + uReset.name + ')' +',\n\t\t|-INTERFACE_CONNECTION-|')
             tbTop = tbTop.replace('|-INITIAL_RESET-|', uReset.name + ' = 1;' +'\n\t\t|-INITIAL_RESET-|')
 
-        for idx, uInterface in enumerate(self.interface):
+        for idx, uAgent in enumerate(self.agent):
             tbTop = tbTop.replace('|-INTERFACE_CDB-|', \
-                        'uvm_config_db#(virtual ' + uInterface.name + ')::set(uvm_root::get(), "*", "' \
-                         + uInterface.instance + '_vif", ' \
-                         + uInterface.instance + '_if_top)' +';\n\t\t|-INTERFACE_CDB-|')
+                        'uvm_config_db#(virtual ' + uAgent.interface.name + ')::set(null, "*.env_h.' + uAgent.instance + '.*", "VIRTUAL_IF", ' \
+                         + uAgent.interface.instance + '_if_top)' +';\n\t\t|-INTERFACE_CDB-|')
 
 
 
@@ -690,6 +697,7 @@ class Parser:
         tbSplit_module = []
         tbSplit_test = []
         tbSplit_sequence = []
+        tbSplit_if_instance = []
 
         for line in tbConfig_Split:
             if 'agent' in line and '=' not in line:
@@ -716,6 +724,8 @@ class Parser:
                 current_analysis='test'
             if 'sequence' in line and '=' not in line:
                 current_analysis='sequence'
+            if 'if_instance' in line and '=' not in line:
+                current_analysis='if_instance'
             if '}' in line and '=' not in line:
                 current_analysis=current_analysis
 
@@ -743,6 +753,8 @@ class Parser:
                 tbSplit_test.append(line)
             if current_analysis == 'sequence':
                 tbSplit_sequence.append(line)
+            if current_analysis == 'if_instance':
+                tbSplit_if_instance.append(line)
             if current_analysis == 'NONE':
                 pass
 
@@ -753,6 +765,7 @@ class Parser:
         list_clock = []
         list_reset = []
         list_interface = []
+        list_if_instance = []
         list_transa = []
         list_refmod = []
         list_test = []
@@ -878,11 +891,6 @@ class Parser:
                 auxName = string[1]
                 auxName = auxName.replace(" ","")
 
-            if 'instance' in line:
-                string = line.split("=", 1)
-                auxInstance = string[1]
-                auxInstance = auxInstance.replace(" ","")
-
             if 'clock' in line:
                 string = line.split("=", 1)
                 auxClock_name = string[1]
@@ -917,13 +925,45 @@ class Parser:
 
 
             if '}' in line:
+                for line in tbSplit_if_instance:
+                    if 'if_instance' in line and '=' not in line:
+                        auxInstance = ''
+                        auxName_con = ''
+                        auxSignal_sig_list = []
+                        for uSignal in auxSignal_list:
+                            auxSignal_sig_list.append(uSignal)
 
-                auxInterface = Interface(auxName, auxInstance, auxClock, auxReset)
-                for idx,uSignal in enumerate(auxSignal_list):
-                    auxInterface.addSignal(uSignal)
+                    if 'type' in line:
+                        string = line.split("=", 1)
+                        auxName_con = string[1]
+                        auxName_con = auxName_con.replace(" ","")
 
-                list_interface.append(auxInterface)
-
+                    if 'instance' in line and 'if_instance' not in line:
+                        string = line.split("=", 1)
+                        auxInstance = string[1]
+                        auxInstance = auxInstance.replace(" ","")
+                    
+                    if 'con' in line:
+                        string = line.split("=", 1)
+                        auxConnect_name = string[1]
+                        auxConnect_name = auxConnect_name.replace(" ","")
+                        connection = auxConnect_name.split(",", 1)
+                        auxSig_if = connection[0]
+                        auxDut_if = connection[1]
+                        for idx,uSignal in enumerate(auxSignal_sig_list):
+                            if auxSig_if == uSignal.name:
+                                auxSignal_sig_list[idx].addConnection(auxDut_if) 
+                    
+                    if '}' in line:
+                        if auxName_con==auxName:
+                            auxInterface = Interface(auxName, auxInstance, auxClock, auxReset)
+                            for idx,uSignal in enumerate(auxSignal_sig_list):
+                                auxInterface.addSignal(uSignal)
+                            
+                            list_interface.append(auxInterface)
+                        else:
+                            pass
+                    
         for line in tbSplit_transa:
 
             if 'transaction' in line and '=' not in line:
@@ -1089,11 +1129,10 @@ class Parser:
 
             if 'interface' in line:
                 string = line.split("=", 1)
-                auxInterface_name = string[1]
-                auxInterface_name = auxInterface_name.replace(" ","")
-
+                auxInterface_instance = string[1]
+                auxInterface_instance = auxInterface_instance.replace(" ","")
                 for idx,uInterface in enumerate(list_interface):
-                    if (uInterface.name == auxInterface_name):
+                    if (uInterface.instance == auxInterface_instance):
                         auxInterface = uInterface
                         break
 
@@ -1143,7 +1182,17 @@ class Parser:
         for refmod in env.scoreboard.refmod:
             refmod.writeRefmod(self.outputdir)
 
+        different_agent_name = []
+        different_agent = []
+
         for agent in env.agent:
+            if agent.name not in different_agent_name:
+                different_agent_name.append(agent.name)
+                different_agent.append(agent)
+            else:
+                pass
+
+        for agent in different_agent:
             agent.writeAgentAll(self.outputdir)
 
         # Creating Tests and Sequences
@@ -1169,11 +1218,11 @@ class Parser:
 
             if 'agent' in line:
                 string = line.split("=", 1)
-                auxAgent_name = string[1]
-                auxAgent_name = auxAgent_name.replace(" ","")
+                auxAgent_instance = string[1]
+                auxAgent_instance = auxAgent_instance.replace(" ","")
 
                 for idx,uAgent in enumerate(list_agent):
-                    if (uAgent.name == auxAgent_name):
+                    if (uAgent.instance == auxAgent_instance):
                         auxAgent = uAgent
                         break
 
@@ -1226,6 +1275,9 @@ class Parser:
 
         for uInterface in list_interface:
             Dut.addInterface(uInterface)
+        
+        for idx,uAgent in enumerate(list_agent):
+            Dut.addAgent(uAgent)
 
         for uSignal in list_signal:
             Dut.addSignal(uSignal)
