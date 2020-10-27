@@ -36,7 +36,7 @@ function void |-AGENT-|_driver::build_phase(uvm_phase phase);
     `uvm_info(tID, $sformatf("build_phase begin ..."), UVM_HIGH)
 
     // Get virtual interface from uvm_config_db
-    if (!uvm_config_db#(virtual |-INTERFACE-|)::get(this, "", "|-INTERFACE_INSTANCE-|_if_top", this.|-INTERFACE_INSTANCE-|_vif)) begin
+    if (!uvm_config_db#(virtual |-INTERFACE-|)::get(this, "", "VIRTUAL_IF", this.|-INTERFACE_INSTANCE-|_vif)) begin
         `uvm_fatal("NOVIF", {"virtual interface must be set for: ", get_full_name(), ".|-INTERFACE_INSTANCE-|_vif"})
     end
 endfunction : build_phase

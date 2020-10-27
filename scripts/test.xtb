@@ -29,11 +29,17 @@ duration=180
 
 interface{
 name=agentDummy
-instance=agtDummy
 signal=in_data
 signal=out_data
 clock=clock
 reset=reset
+}
+
+if_instance{
+type=agentDummy
+con=in_data,in_data
+con=out_data,out_data
+instance=agtDummy
 }
 
 field{
@@ -61,7 +67,7 @@ field=out_data
 agent{
 name=agentDummy
 instance=instanceDummy
-interface=agentDummy
+interface=agtDummy
 transaction=dummyTransa
 driver_policy=
 monitor_policy=
