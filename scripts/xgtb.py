@@ -13,6 +13,7 @@ import os
 import sys, getopt
 from colorama import Fore
 from pathlib import Path
+import copy
 
 class Clock:
     def __init__(self, name, period):
@@ -422,7 +423,7 @@ class Env:
         tbEnv = tbEnv.replace('|-ENV-|', self.name)
 
         for idx,agent in enumerate(self.agent):
-            tbEnv = tbEnv.replace('|-AGENT-|', agent.name + '_agent ' +  agent.instance + ';\n\t|-REFMOD-|')
+            tbEnv = tbEnv.replace('|-AGENT-|', agent.name + '_agent ' +  agent.instance + ';\n\t|-AGENT-|')
 
         tbEnv = tbEnv.replace('|-SCOREBOARD-|', self.scoreboard.name + '_scoreboard ' +  self.scoreboard.instance  + ';\n\t|-SCOREBOARD-|')
 
@@ -507,7 +508,7 @@ class Test:
         for idx,sequence in enumerate(self.sequence):
             tbTest = tbTest.replace('|-SEQUENCE_CREATION-|', 'seq' + str(idx) + ' = ' + sequence.name + '::create("'+ 'seq' + str(idx) +'", this)' +  ';\n\t\t|-SEQUENCE_CREATION-|')
             for agent in sequence.agent:
-                tbTest = tbTest.replace('|-SEQUENCE_START-|', 'seq' + str(idx) + '.start(env_h.' + agent.isntance + '.seqr)' + ';\n\t\t|-SEQUENCE_START-|')
+                tbTest = tbTest.replace('|-SEQUENCE_START-|', 'seq' + str(idx) + '.start(env_h.' + agent.instance + '.seqr)' + ';\n\t\t|-SEQUENCE_START-|')
 
         # CLEANUP
         tbTest = tbTest.replace('|-TEST-|', '')
@@ -849,14 +850,8 @@ class Parser:
                 auxIo = string[1]
                 auxIo = auxIo.replace(" ","")
 
-            if 'connect' in line:
-                string = line.split("=", 1)
-                auxConnect = string[1]
-                auxConnect = auxConnect.replace(" ","")
-
             if '}' in line:
                 auxSignal = Signal(auxName, auxType, auxIo)
-                auxSignal.addConnection(auxConnect)
                 list_signal.append(auxSignal)
 
         for line in tbSplit_field:
@@ -929,7 +924,10 @@ class Parser:
                     if 'if_instance' in line and '=' not in line:
                         auxInstance = ''
                         auxName_con = ''
+                        auxSig_if = []
+                        auxDut_if = []
                         auxSignal_sig_list = []
+                        auxInterface = None
                         for uSignal in auxSignal_list:
                             auxSignal_sig_list.append(uSignal)
 
@@ -942,28 +940,36 @@ class Parser:
                         string = line.split("=", 1)
                         auxInstance = string[1]
                         auxInstance = auxInstance.replace(" ","")
-                    
+
                     if 'con' in line:
                         string = line.split("=", 1)
                         auxConnect_name = string[1]
                         auxConnect_name = auxConnect_name.replace(" ","")
                         connection = auxConnect_name.split(",", 1)
-                        auxSig_if = connection[0]
-                        auxDut_if = connection[1]
-                        for idx,uSignal in enumerate(auxSignal_sig_list):
-                            if auxSig_if == uSignal.name:
-                                auxSignal_sig_list[idx].addConnection(auxDut_if) 
-                    
+                        auxSig_if.append(connection[0])
+                        auxDut_if.append(connection[1])
+
+
+                        # if auxName_con==auxName:
+                        #     for idx,uSignal in enumerate(auxSignal_sig_list):
+                        #         if auxSig_if == uSignal.name:
+                        #             print('CON')
+                        #             auxSignal_sig_list[idx].addConnection(auxDut_if)
+
                     if '}' in line:
                         if auxName_con==auxName:
                             auxInterface = Interface(auxName, auxInstance, auxClock, auxReset)
-                            for idx,uSignal in enumerate(auxSignal_sig_list):
-                                auxInterface.addSignal(uSignal)
-                            
+                            for idx,uSignal in enumerate(auxSignal_list):
+                                signal_aux = copy.copy(uSignal)
+                                for idy, uSignal_aux in enumerate(auxSig_if):
+                                    if uSignal_aux == signal_aux.name:
+                                        signal_aux.addConnection(auxDut_if[idy])
+                                auxInterface.addSignal(signal_aux)
+
                             list_interface.append(auxInterface)
                         else:
                             pass
-                    
+
         for line in tbSplit_transa:
 
             if 'transaction' in line and '=' not in line:
@@ -1273,9 +1279,10 @@ class Parser:
         for uReset in list_reset:
             Dut.addReset(uReset)
 
-        for uInterface in list_interface:
-            Dut.addInterface(uInterface)
-        
+        # for uInterface in list_interface:
+        #     for signal in uInterface.signal:
+        #         print(signal.connect)
+
         for idx,uAgent in enumerate(list_agent):
             Dut.addAgent(uAgent)
 

@@ -42,6 +42,13 @@ con=out_data,out_data
 instance=agtDummy
 }
 
+if_instance{
+type=agentDummy
+con=in_data,in_data6
+con=out_data,out_data6
+instance=agtDummy2
+}
+
 field{
 name=in_data
 type=int
@@ -75,6 +82,18 @@ type=bidirectional
 refmod=dummyRfm
 comp=dummyComp
 }
+
+agent{
+name=agentDummy
+instance=instanceDummy2
+interface=agtDummy2
+transaction=dummyTransa
+driver_policy=
+monitor_policy=
+type=output
+comp=dummyComp2
+}
+
 
 refmod{
 name=dummyRefmod
