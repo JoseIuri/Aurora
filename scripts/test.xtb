@@ -49,6 +49,13 @@ con=out_data,out_data6
 instance=agtDummy2
 }
 
+if_instance{
+type=agentDummy
+con=in_data,in_data6
+con=out_data,out_data6
+instance=vip_if
+}
+
 field{
 name=in_data
 type=int
@@ -94,6 +101,15 @@ type=output
 comp=dummyComp2
 }
 
+vip{
+name=AXI4VIp
+instance=axi4_vip
+interface=vip_if
+file_package=../../src/axi4_vip_pkg.sv
+include=../../src/axi4_vip_if.sv
+tlm_port=ap_rsp_port,dummyComp3,dummyTransa
+tlm_port=ap_req_port,dummyRfm3,dummyTransa
+}
 
 refmod{
 name=dummyRefmod
@@ -110,6 +126,13 @@ refmod_policy=
 comp=dummyComp2
 }
 
+refmod{
+name=dummyRefmod3
+instance=dummyRfm3
+refmod_policy=
+comp=dummyComp3
+}
+
 comp{
 name=comp
 instance=dummyComp
@@ -120,6 +143,12 @@ comp{
 name=comp
 instance=dummyComp2
 transaction=dummyTransa2
+}
+
+comp{
+name=comp
+instance=dummyComp3
+transaction=dummyTransa3
 }
 
 sequence{
