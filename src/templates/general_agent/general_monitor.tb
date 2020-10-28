@@ -6,7 +6,7 @@
 class |-AGENT-|_monitor extends uvm_monitor;
 
     // Attributes
-    virtual |-INTERFACE-| |INTERFACE_INSTANCE|_vif;
+    virtual |-INTERFACE-| |-INTERFACE_INSTANCE-|_vif;
     uvm_analysis_port #(|-TRANSACTION-|) req;
     uvm_analysis_port #(|-TRANSACTION-|) resp;
     string                              tID;
@@ -31,7 +31,7 @@ class |-AGENT-|_monitor extends uvm_monitor;
     function build_phase(uvm_phase phase);
         super.build_phase(phase);
         `uvm_info(tID, $sformatf("build_phase begin ..."), UVM_HIGH)
-        if (!(uvm_config_db#(virtual |-INTERFACE-|)::get(this, "", "|-INTERFACE_INSTANCE-|_if_top", |INTERFACE_INSTANCE|_vif))) begin
+        if (!(uvm_config_db#(virtual |-INTERFACE-|)::get(this, "", "VIRTUAL_IF", |INTERFACE_INSTANCE|_vif))) begin
             `uvm_fatal("NOVIF", {"virtual interface must be set for: ", get_full_name(), ".|-INTERFACE_INSTANCE-|_vif"})
         end
 

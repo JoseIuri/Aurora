@@ -29,11 +29,31 @@ duration=180
 
 interface{
 name=agentDummy
-instance=agtDummy
 signal=in_data
 signal=out_data
 clock=clock
 reset=reset
+}
+
+if_instance{
+type=agentDummy
+con=in_data,in_data
+con=out_data,out_data
+instance=agtDummy
+}
+
+if_instance{
+type=agentDummy
+con=in_data,in_data6
+con=out_data,out_data6
+instance=agtDummy2
+}
+
+if_instance{
+type=agentDummy
+con=in_data,in_data6
+con=out_data,out_data6
+instance=vip_if
 }
 
 field{
@@ -61,13 +81,34 @@ field=out_data
 agent{
 name=agentDummy
 instance=instanceDummy
-interface=agentDummy
+interface=agtDummy
 transaction=dummyTransa
 driver_policy=
 monitor_policy=
 type=bidirectional
 refmod=dummyRfm
 comp=dummyComp
+}
+
+agent{
+name=agentDummy
+instance=instanceDummy2
+interface=agtDummy2
+transaction=dummyTransa
+driver_policy=
+monitor_policy=
+type=output
+comp=dummyComp2
+}
+
+vip{
+name=AXI4VIp
+instance=axi4_vip
+interface=vip_if
+file_package=../../src/axi4_vip_pkg.sv
+include=../../src/axi4_vip_if.sv
+tlm_port=ap_rsp_port,dummyComp3,dummyTransa
+tlm_port=ap_req_port,dummyRfm3,dummyTransa
 }
 
 refmod{
@@ -85,6 +126,13 @@ refmod_policy=
 comp=dummyComp2
 }
 
+refmod{
+name=dummyRefmod3
+instance=dummyRfm3
+refmod_policy=
+comp=dummyComp3
+}
+
 comp{
 name=comp
 instance=dummyComp
@@ -95,6 +143,12 @@ comp{
 name=comp
 instance=dummyComp2
 transaction=dummyTransa2
+}
+
+comp{
+name=comp
+instance=dummyComp3
+transaction=dummyTransa3
 }
 
 sequence{
