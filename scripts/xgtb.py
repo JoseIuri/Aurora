@@ -238,6 +238,9 @@ class Port:
         self.origin = origin
         self.transaction = transaction
         self.endComp = endComp
+    
+    def setEndComp(self, endComp):
+        self.endComp = endComp
 
 class Refmod:
     def __init__(self, name, instance, policy, port_out, destination):
@@ -359,8 +362,15 @@ class Scoreboard:
         for idx,uPort in enumerate(self.port):
             if uPort.endComp == 0:
                 tbScoreboard = tbScoreboard.replace('|-CONNECTIONS-|', uPort.origin + '_to_' + uPort.direction + '.connect(' + uPort.direction + '.' 'from_' + uPort.origin + ');\n\t\t|-CONNECTIONS-|')
-            else:
+            elif uPort.endComp == 1:
                 tbScoreboard = tbScoreboard.replace('|-CONNECTIONS-|', uPort.origin + '_to_' + uPort.direction + '.connect(' + uPort.direction + '.' 'before_export' + ');\n\t\t|-CONNECTIONS-|')
+            else:
+                for idx,uRefmod in enumerate(self.refmod):
+                    if uPort.direction + '_rfm' == uRefmod.instance:
+                        tbScoreboard = tbScoreboard.replace('|-CONNECTIONS-|', uPort.origin + '_to_' + uPort.direction + '.connect(' + uPort.direction + '_rfm.' 'from_' + uPort.origin + ');\n\t\t|-CONNECTIONS-|')
+                for idy,uComp in enumerate(self.comp):
+                    if uPort.direction == uComp.instance:
+                        tbScoreboard = tbScoreboard.replace('|-CONNECTIONS-|', uPort.origin + '_to_' + uPort.direction + '.connect(' + uPort.direction + '.' 'before_export' + ');\n\t\t|-CONNECTIONS-|')
 
         # Refmod Port Creation
         for idx,uPort in enumerate(self.port):
@@ -383,7 +393,7 @@ class Scoreboard:
                 if idx == 0:
                     tbScoreboard = tbScoreboard.replace('|-CONNECTIONS-|', uRefmod.instance + '.' + uPort.origin + '_to_'+ uPort.direction + '.connect(' + uPort.direction + '.' 'after_export' + ');\n\t\t|-CONNECTIONS-|')
                 else:
-                    tbScoreboard = tbScoreboard.replace('|-CONNECTIONS-|', uRefmod.instance + '.' + uPort.origin + '_to_'+ uPort.direction + '.connect(' + uPort.direction + '.' + 'from_' + uPort.origin + ');\n\t\t|-CONNECTIONS-|')
+                    tbScoreboard = tbScoreboard.replace('|-CONNECTIONS-|', uRefmod.instance + '.' + uPort.origin + '_to_'+ uPort.direction + '.connect(' + uPort.direction + '_rfm.' + 'from_' + uPort.origin + ');\n\t\t|-CONNECTIONS-|')
 
         # CLEANUP
         tbScoreboard = tbScoreboard.replace('|-REFMOD-|', '')
@@ -398,6 +408,21 @@ class Scoreboard:
         n = scoreboard_file.write(tbScoreboard)
         scoreboard_file.close()
 
+class Vip:
+    def __init__(self, name, instance, interface, file_package):
+        self.name = name + '_env'
+        self.interface = interface
+        self.instance = instance
+        self.file_package = file_package
+        self.port = []
+        self.include = []
+    
+    def addPort(self, tlm_port):
+        self.port.append(tlm_port)
+    
+    def addInclude(self, include_file):
+        self.include.append(include_file)
+
 class Env:
     def __init__(self, name, instance, port, scoreboard):
         self.name = name + '_env'
@@ -405,6 +430,7 @@ class Env:
         self.port = [port]
         self.scoreboard = scoreboard
         self.agent = []
+        self.vip = []
 
     def addPort(self, port):
         self.port.append(port)
@@ -414,6 +440,9 @@ class Env:
 
     def addAgent(self, agent):
         self.agent.append(agent)
+    
+    def addVip(self, vip):
+        self.vip.append(vip)
 
     def writeEnv(self, outputdir):
 
@@ -432,6 +461,10 @@ class Env:
 
         tbEnv = tbEnv.replace('|-SCOREBOARD_CREATION-|', self.scoreboard.instance + ' = ' + self.scoreboard.name + '_scoreboard' + '::create("' + self.scoreboard.instance + '", this)' +  ';\n\t\t|-SCOREBOARD_CREATION-|')
 
+        for idx,uVip in enumerate(self.vip):
+            tbEnv = tbEnv.replace('|-VIP-|', uVip.name + ' ' +  uVip.instance + ';\n\t|-VIP-|')
+            tbEnv = tbEnv.replace('|-VIP_CREATION-|', uVip.instance + ' = ' + uVip.name + '::create("' + uVip.instance + '", this)' +  ';\n\t\t|-VIP_CREATION-|')
+
         for uAgent in (self.agent):
             if (uAgent.type == 'input'):
                 envPortAgtRfm = Port(uAgent.instance + '_to_' + uAgent.refmod, uAgent.refmod, uAgent.instance, uAgent.transaction, 0)
@@ -449,13 +482,21 @@ class Env:
                 self.scoreboard.addPort(envPortAgtComp)
                 tbEnv = tbEnv.replace('|-CONNECTIONS-|', uAgent.instance + '.' + 'ap_resp' + '.connect(' + self.scoreboard.instance + '.' + uAgent.instance + '_to_' + uAgent.comp + ');\n\t\t|-CONNECTIONS-|')
 
+        for uVip in self.vip:
+            for uPort in uVip.port:
+                envPortVipC = Port(uPort.origin + '_to_' + uPort.direction, uPort.direction, uPort.origin, uPort.transaction, 3)
+                self.scoreboard.addPort(copy.copy(envPortVipC))
+                tbEnv = tbEnv.replace('|-CONNECTIONS-|', uVip.instance + '.' + uPort.name + '.connect(' + self.scoreboard.instance + '.' + uPort.origin + '_to_' + uPort.direction + ');\n\t\t|-CONNECTIONS-|')
+
 
         # CLEANUP
         tbEnv = tbEnv.replace('|-AGENT-|', '')
+        tbEnv = tbEnv.replace('|-VIP-|', '')
         tbEnv = tbEnv.replace('|-REFMOD-|', '')
         tbEnv = tbEnv.replace('|-SCOREBOARD-|', '')
         tbEnv = tbEnv.replace('|-SCOREBOARD_CREATION-|', '')
         tbEnv = tbEnv.replace('|-AGENT_CREATION-|', '')
+        tbEnv = tbEnv.replace('|-VIP_CREATION-|', '')
         tbEnv = tbEnv.replace('|-SCOREBOARD_CREATION-|', '')
         tbEnv = tbEnv.replace('|-CONNECTIONS-|', '')
 
@@ -532,6 +573,7 @@ class Module:
         self.interface = []
         self.env = []
         self.agent = []
+        self.vip = []
 
     def addSignal(self, signal):
         self.signal.append(signal)
@@ -550,6 +592,9 @@ class Module:
 
     def addAgent(self, agent):
         self.agent.append(agent)
+    
+    def addVip(self, vip):
+        self.vip.append(vip)
 
     def writeWrapper(self, outputdir):
         with open(os.path.dirname(os.path.realpath(__file__)) + '/../src/templates/wrapper.tb', 'r') as file:
@@ -559,6 +604,9 @@ class Module:
 
         for idx,uAgent in enumerate(self.agent):
             tbWrapper = tbWrapper.replace('|-INTERFACE-|', uAgent.interface.name + ' ' + uAgent.interface.instance + '_if' +',\n\t|-INTERFACE-|')
+        
+        for idx,uVip in enumerate(self.vip):
+            tbWrapper = tbWrapper.replace('|-INTERFACE-|', uVip.interface.name + ' ' + uVip.interface.instance + '_if' +',\n\t|-INTERFACE-|')
 
         for idx,uClock in enumerate(self.clock):
             tbWrapper = tbWrapper.replace('|-INTERFACE-|', 'input ' + uClock.name +',\n\t|-INTERFACE-|')
@@ -572,6 +620,13 @@ class Module:
                         tbWrapper = tbWrapper.replace('|-CONNECTIONS-|', '.'+ busSig.connect + '(' + uAgent.interface.instance + '_if.' + busSig.name +') ' +',\n\t\t|-CONNECTIONS-|')
                     else:
                         tbWrapper = tbWrapper.replace('|-CONNECTIONS-|', '.'+ busSig.name + '(' + uAgent.interface.instance + '_if.' + busSig.name +') ' +',\n\t\t|-CONNECTIONS-|')
+
+        for idx,uVip in enumerate(self.vip):
+            for idy,busSig in enumerate(uVip.interface.signal):
+                    if busSig.connect is not None:
+                        tbWrapper = tbWrapper.replace('|-CONNECTIONS-|', '.'+ busSig.connect + '(' + uVip.interface.instance + '_if.' + busSig.name +') ' +',\n\t\t|-CONNECTIONS-|')
+                    else:
+                        tbWrapper = tbWrapper.replace('|-CONNECTIONS-|', '.'+ busSig.name + '(' + uVip.interface.instance + '_if.' + busSig.name +') ' +',\n\t\t|-CONNECTIONS-|')
 
         for idx,uClock in enumerate(self.clock):
             tbWrapper = tbWrapper.replace('|-CONNECTIONS-|', '.' + uClock.name + '(' + uClock.name + ')' +',\n\t\t|-CONNECTIONS-|')
@@ -623,6 +678,10 @@ class Module:
                         'uvm_config_db#(virtual ' + uAgent.interface.name + ')::set(null, "*.env_h.' + uAgent.instance + '.*", "VIRTUAL_IF", ' \
                          + uAgent.interface.instance + '_if_top)' +';\n\t\t|-INTERFACE_CDB-|')
 
+        for idx, uVip in enumerate(self.vip):
+            tbTop = tbTop.replace('|-INTERFACE_CDB-|', \
+                        'uvm_config_db#(virtual ' + uVip.interface.name + ')::set(null, "*.env_h.' + uVip.instance + '.*", "VIRTUAL_IF", ' \
+                         + uVip.interface.instance + '_if_top)' +';\n\t\t|-INTERFACE_CDB-|')
 
 
         #CLEANUP
@@ -648,11 +707,16 @@ class Module:
 class Package:
     def __init__(self, name):
         self.name = name
+        self.vip = []
+
+    def addVip(self, vip):
+        self.vip.append(vip)
 
     def writePackage(self, outputdir):
         pkg = """package {MODULE}_pkg;
     `include "uvm_macros.svh"
     import uvm_pkg::*;
+    |-IMPORT-|
 
     |-FILES-|
 endpackage""".format(MODULE=self.name)
@@ -665,11 +729,19 @@ endpackage""".format(MODULE=self.name)
             if '_top.sv' not in filename and '_wrapper.sv' not in filename and '_interface.sv' not in filename:
                 pkg = pkg.replace('|-FILES-|', '`include "' + filename +'"\n\t|-FILES-|')
 
+        for uVip in self.vip:
+            import_name = uVip.file_package.replace('.sv', '')
+            if '/' in import_name:
+                string = import_name.rsplit("/", 1)
+            pkg = pkg.replace('|-IMPORT-|', 'import ' + string[1] +'::*\n\t|-IMPORT-|')
+
         pkg = pkg.replace('|-FILES-|', '')
+        pkg = pkg.replace('|-IMPORT-|', '')
 
         pkg_file = open(outputdir + '/' + self.name + "_pkg.sv", "wt")
         n = pkg_file.write(pkg)
         pkg_file.close()
+
 
 class Parser:
 
@@ -699,6 +771,7 @@ class Parser:
         tbSplit_test = []
         tbSplit_sequence = []
         tbSplit_if_instance = []
+        tbSplit_vip = []
 
         for line in tbConfig_Split:
             if 'agent' in line and '=' not in line:
@@ -727,6 +800,8 @@ class Parser:
                 current_analysis='sequence'
             if 'if_instance' in line and '=' not in line:
                 current_analysis='if_instance'
+            if 'vip' in line and '=' not in line:
+                current_analysis='vip'
             if '}' in line and '=' not in line:
                 current_analysis=current_analysis
 
@@ -756,6 +831,8 @@ class Parser:
                 tbSplit_sequence.append(line)
             if current_analysis == 'if_instance':
                 tbSplit_if_instance.append(line)
+            if current_analysis == 'vip':
+                tbSplit_vip.append(line)
             if current_analysis == 'NONE':
                 pass
 
@@ -771,6 +848,7 @@ class Parser:
         list_refmod = []
         list_test = []
         list_sequence = []
+        list_vip = []
 
         for line in tbSplit_module:
             if 'module' in line and '=' not in line:
@@ -948,13 +1026,6 @@ class Parser:
                         connection = auxConnect_name.split(",", 1)
                         auxSig_if.append(connection[0])
                         auxDut_if.append(connection[1])
-
-
-                        # if auxName_con==auxName:
-                        #     for idx,uSignal in enumerate(auxSignal_sig_list):
-                        #         if auxSig_if == uSignal.name:
-                        #             print('CON')
-                        #             auxSignal_sig_list[idx].addConnection(auxDut_if)
 
                     if '}' in line:
                         if auxName_con==auxName:
@@ -1165,7 +1236,72 @@ class Parser:
                     auxAgent.setCompConn(auxComp_name)
 
                 list_agent.append(auxAgent)
+        
 
+        for line in tbSplit_vip:
+
+            if 'vip' in line and '=' not in line:
+                auxName = ''
+                auxInstance = ''
+                auxInterface = ''
+                auxFile_package = ''
+                auxInclude = []
+                auxPort = []
+                auxPort_destination = []
+                auxPort_transa = []
+
+            if 'name' in line:
+                string = line.split("=", 1)
+                auxName = string[1]
+                auxName = auxName.replace(" ","")
+
+            if 'instance' in line:
+                string = line.split("=", 1)
+                auxInstance = string[1]
+                auxInstance = auxInstance.replace(" ","")
+
+            if 'interface' in line:
+                string = line.split("=", 1)
+                auxInterface_instance = string[1]
+                auxInterface_instance = auxInterface_instance.replace(" ","")
+                for idx,uInterface in enumerate(list_interface):
+                    if (uInterface.instance == auxInterface_instance):
+                        auxInterface = uInterface
+                        break
+
+            if 'file_package' in line:
+                string = line.split("=", 1)
+                auxFile_package = string[1]
+                auxFile_package = auxFile_package.replace(" ","")
+
+            if 'include' in line:
+                string = line.split("=", 1)
+                auxInclude_name = string[1]
+                auxInclude_name = auxInclude_name.replace(" ","")
+                auxInclude.append(auxInclude_name)
+            
+            if 'tlm_port' in line:
+                string = line.split("=", 1)
+                auxConnect_name = string[1]
+                auxConnect_name = auxConnect_name.replace(" ","")
+                connection = auxConnect_name.split(",", 1)
+                auxPort.append(connection[0])
+                connection2 = connection[1].split(",", 1)
+                auxPort_destination.append(connection2[0])
+                auxPort_transa.append(connection[1])
+
+            if '}' in line:
+
+                auxVip = Vip(auxName, auxInstance, auxInterface, auxFile_package)
+                for idx,uPort in enumerate(auxPort):
+                    auxTransa = Transaction(auxPort_transa[idx])
+                    port_create = Port(uPort, auxPort_destination[idx], auxInstance, copy.copy(auxTransa), 0)
+                    auxVip.addPort(copy.copy(port_create))
+                
+                for idx,uInclude in enumerate(auxInclude):
+                    auxVip.addInclude(uInclude)
+
+                list_vip.append(copy.copy(auxVip))
 
         # Creating ENV
 
@@ -1181,6 +1317,9 @@ class Parser:
 
         for uAgent in list_agent:
             env.addAgent(uAgent)
+
+        for uVip in list_vip:
+            env.addVip(uVip)
 
         env.writeEnv(self.outputdir)
         env.scoreboard.writeScoreboard(self.outputdir)
@@ -1279,12 +1418,11 @@ class Parser:
         for uReset in list_reset:
             Dut.addReset(uReset)
 
-        # for uInterface in list_interface:
-        #     for signal in uInterface.signal:
-        #         print(signal.connect)
-
         for idx,uAgent in enumerate(list_agent):
             Dut.addAgent(uAgent)
+        
+        for idx,uVip in enumerate(list_vip):
+            Dut.addVip(uVip)
 
         for uSignal in list_signal:
             Dut.addSignal(uSignal)
@@ -1296,6 +1434,9 @@ class Parser:
         Dut.writeTop(self.outputdir)
 
         pkg = Package(moduleName)
+
+        for idx,uVip in enumerate(list_vip):
+            pkg.addVip(uVip)
 
         pkg.writePackage(self.outputdir)
 
