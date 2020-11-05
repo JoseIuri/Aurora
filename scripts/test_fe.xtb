@@ -1,0 +1,29 @@
+module{
+name=testeIO
+formal=true
+}
+
+signal{
+name=in_data
+type=logic [8]
+io=input
+connect=in_data
+}
+
+signal{
+name=out_data
+type=logic [8]
+io=output
+connect=out_data
+}
+
+clock{
+name=clock
+period=90
+}
+
+reset{
+name=reset
+period=3e12
+duration=180
+}

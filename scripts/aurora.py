@@ -11,6 +11,7 @@
 
 import os
 import sys, getopt
+import argparse
 from colorama import Fore
 from pathlib import Path
 import copy
@@ -96,7 +97,7 @@ class Agent:
 
         def writeInterface(self, outputdir):
 
-            with open(os.path.dirname(os.path.realpath(__file__)) + '/../src/templates/general_agent/general_interface.tb', 'r') as file:
+            with open(os.path.dirname(os.path.realpath(__file__)) + '/../src/templates/verification/general_agent/general_interface.tb', 'r') as file:
                 tbInterface=file.read()
 
             tbInterface = tbInterface.replace('|-INTERFACE-|', self.interface.name)
@@ -119,7 +120,7 @@ class Agent:
 
         def writeTransaction(self, outputdir):
 
-            with open(os.path.dirname(os.path.realpath(__file__)) + '/../src/templates/general_agent/general_transaction.tb', 'r') as file:
+            with open(os.path.dirname(os.path.realpath(__file__)) + '/../src/templates/verification/general_agent/general_transaction.tb', 'r') as file:
                 tbTransaction=file.read()
 
             tbTransaction = tbTransaction.replace('|-TRANSACTION-|', self.transaction.name)
@@ -145,7 +146,7 @@ class Agent:
 
         def writeAgent(self, outputdir):
 
-            with open(os.path.dirname(os.path.realpath(__file__)) + '/../src/templates/general_agent/general_agent.tb', 'r') as file:
+            with open(os.path.dirname(os.path.realpath(__file__)) + '/../src/templates/verification/general_agent/general_agent.tb', 'r') as file:
                 tbAgent=file.read()
 
             tbAgent = tbAgent.replace('|-AGENT-|', self.name)
@@ -169,7 +170,7 @@ class Agent:
             agent_file.close()
 
         def writeDriver(self, outputdir):
-            with open(os.path.dirname(os.path.realpath(__file__)) + '/../src/templates/general_agent/general_driver.tb', 'r') as file:
+            with open(os.path.dirname(os.path.realpath(__file__)) + '/../src/templates/verification/general_agent/general_driver.tb', 'r') as file:
                 tbDriver=file.read()
 
             tbDriver = tbDriver.replace('|-AGENT-|', self.name)
@@ -184,7 +185,7 @@ class Agent:
             driver_file.close()
 
         def writeMonitor(self, outputdir):
-            with open(os.path.dirname(os.path.realpath(__file__)) + '/../src/templates/general_agent/general_monitor.tb', 'r') as file:
+            with open(os.path.dirname(os.path.realpath(__file__)) + '/../src/templates/verification/general_agent/general_monitor.tb', 'r') as file:
                 tbMonitor=file.read()
 
             tbMonitor = tbMonitor.replace('|-AGENT-|', self.name)
@@ -212,7 +213,7 @@ class Agent:
 
         def writeCoverage(self, outputdir):
 
-            with open(os.path.dirname(os.path.realpath(__file__)) + '/../src/templates/general_agent/general_coverage.tb', 'r') as file:
+            with open(os.path.dirname(os.path.realpath(__file__)) + '/../src/templates/verification/general_agent/general_coverage.tb', 'r') as file:
                 tbCoverage=file.read()
 
             tbCoverage = tbCoverage.replace('|-AGENT-|', self.name)
@@ -265,7 +266,7 @@ class Refmod:
         self.destination.append(destination)
 
     def writeRefmod(self, outputdir):
-        with open(os.path.dirname(os.path.realpath(__file__)) + '/../src/templates/scoreboard/refmod.tb', 'r') as file:
+        with open(os.path.dirname(os.path.realpath(__file__)) + '/../src/templates/verification/scoreboard/refmod.tb', 'r') as file:
             tbRefmod=file.read()
 
         tbRefmod = tbRefmod.replace('|-REFMOD-|', self.name)
@@ -336,7 +337,7 @@ class Scoreboard:
 
     def writeScoreboard(self, outputdir):
 
-        with open(os.path.dirname(os.path.realpath(__file__)) + '/../src/templates/scoreboard/scoreboard.tb', 'r') as file:
+        with open(os.path.dirname(os.path.realpath(__file__)) + '/../src/templates/verification/scoreboard/scoreboard.tb', 'r') as file:
             tbScoreboard=file.read()
 
         tbScoreboard = tbScoreboard.replace('|-SCOREBOARD-|', self.name)
@@ -446,7 +447,7 @@ class Env:
 
     def writeEnv(self, outputdir):
 
-        with open(os.path.dirname(os.path.realpath(__file__)) + '/../src/templates/env.tb', 'r') as file:
+        with open(os.path.dirname(os.path.realpath(__file__)) + '/../src/templates/verification/env.tb', 'r') as file:
             tbEnv=file.read()
 
         tbEnv = tbEnv.replace('|-ENV-|', self.name)
@@ -514,7 +515,7 @@ class Sequence:
 
     def writeSequence(self, outputdir):
 
-            with open(os.path.dirname(os.path.realpath(__file__)) + '/../src/templates/sequence.tb', 'r') as file:
+            with open(os.path.dirname(os.path.realpath(__file__)) + '/../src/templates/verification/sequence.tb', 'r') as file:
                 tbSequence=file.read()
 
             tbSequence = tbSequence.replace('|-SEQUENCE-|', self.name)
@@ -535,7 +536,7 @@ class Test:
 
     def writeTest(self, outputdir):
 
-        with open(os.path.dirname(os.path.realpath(__file__)) + '/../src/templates/test.tb', 'r') as file:
+        with open(os.path.dirname(os.path.realpath(__file__)) + '/../src/templates/verification/test.tb', 'r') as file:
             tbTest=file.read()
 
         tbTest = tbTest.replace('|-TEST-|', self.name)
@@ -597,7 +598,7 @@ class Module:
         self.vip.append(vip)
 
     def writeWrapper(self, outputdir):
-        with open(os.path.dirname(os.path.realpath(__file__)) + '/../src/templates/wrapper.tb', 'r') as file:
+        with open(os.path.dirname(os.path.realpath(__file__)) + '/../src/templates/verification/wrapper.tb', 'r') as file:
             tbWrapper=file.read()
 
         tbWrapper = tbWrapper.replace('|-MODULE-|', self.name)
@@ -643,7 +644,7 @@ class Module:
         wrapper_file.close()
 
     def writeTop(self, outputdir):
-        with open(os.path.dirname(os.path.realpath(__file__)) + '/../src/templates/top.tb', 'r') as file:
+        with open(os.path.dirname(os.path.realpath(__file__)) + '/../src/templates/verification/top.tb', 'r') as file:
             tbTop=file.read()
 
         tbTop = tbTop.replace('|-PACKAGE-|', self.name)
@@ -703,6 +704,49 @@ class Module:
         n = top_file.write(tbTop)
         top_file.close()
 
+    def writeModule(self, outputdir):
+        with open(os.path.dirname(os.path.realpath(__file__)) + '/../src/templates/frontend/module.fe', 'r') as file:
+            tbModule=file.read()
+
+        tbModule = tbModule.replace('|-MODULE-|', self.name)
+
+        tbModule = tbModule.replace('|-MODULE_NAME-|', self.name)
+
+        for idx,uClock in enumerate(self.clock):
+            tbModule = tbModule.replace('|-SIGNALS-|', 'input logic ' + uClock.name +',\n\t\t|-SIGNALS-|')
+
+        for idx,uReset in enumerate(self.reset):
+            tbModule = tbModule.replace('|-SIGNALS-|', 'input logic ' + uReset.name +',\n\t\t|-SIGNALS-|')
+
+        for uSignal in self.signal:
+                tbModule = tbModule.replace('|-SIGNALS-|', uSignal.io + ' ' + uSignal.type + ' ' + uSignal.name + ',\n\t\t|-SIGNALS-|')
+        
+
+        tbModule = tbModule.replace(',\n\t\t|-SIGNALS-|', '')
+
+        module_file = open(outputdir + '/rtl/src/' + self.name + ".sv", "wt")
+        n = module_file.write(tbModule)
+        module_file.close()
+    
+class Synth:
+    def __init__(self, name):
+        self.name = name
+        self.pdk = ''
+        self.pdk_files = []
+
+    
+    def setPDK(self, pdk_dir):
+        self.pdk = pdk_dir
+
+    def addPDKFile(self, pdk_file):
+        self.pdk_files.append(pdk_file)
+    
+    def writeTcl(self, output_dir):
+        with open(os.path.dirname(os.path.realpath(__file__)) + '/../src/templates/frontend/synth.fe', 'r') as file:
+            tbTcl=file.read()
+
+        tbTcl = tbTcl.replace('|-MODULE-|', self.name)
+    
 
 class Package:
     def __init__(self, name):
@@ -750,7 +794,7 @@ class Parser:
         self.inputfile = inputfile
         self.outputdir = outputdir
 
-    def parse(self):
+    def parse_verif(self):
         with open(self.inputfile, 'r') as file:
             tbConfig=file.read()
 
@@ -1439,6 +1483,203 @@ class Parser:
             pkg.addVip(uVip)
 
         pkg.writePackage(self.outputdir)
+    
+    def parse_fe(self):
+        with open(self.inputfile, 'r') as file:
+            tbConfig=file.read()
+
+        tbConfig_Split = "".join([s for s in tbConfig.splitlines(True) if s.strip("\r\n")])
+
+        tbConfig_Split = tbConfig_Split.splitlines()
+
+        tbSplit_agent = []
+        tbSplit_comp = []
+        tbSplit_signal = []
+        tbSplit_field = []
+        tbSplit_clock = []
+        tbSplit_reset = []
+        tbSplit_interface = []
+        tbSplit_transa = []
+        tbSplit_refmod = []
+        tbSplit_module = []
+        tbSplit_test = []
+        tbSplit_sequence = []
+        tbSplit_if_instance = []
+        tbSplit_vip = []
+
+        for line in tbConfig_Split:
+            if 'agent' in line and '=' not in line:
+                current_analysis='agent'
+            if 'comp' in line and '=' not in line:
+                current_analysis='comp'
+            if 'signal' in line and '=' not in line:
+                current_analysis='signal'
+            if 'field' in line and '=' not in line:
+                current_analysis='field'
+            if 'clock' in line and '=' not in line:
+                current_analysis='clock'
+            if 'reset' in line and '=' not in line:
+                current_analysis='reset'
+            if 'interface' in line and '=' not in line:
+                current_analysis='interface'
+            if 'transaction' in line and '=' not in line:
+                current_analysis='transaction'
+            if 'refmod' in line and '=' not in line:
+                current_analysis='refmod'
+            if 'module' in line and '=' not in line:
+                current_analysis='module'
+            if 'test' in line and '=' not in line:
+                current_analysis='test'
+            if 'sequence' in line and '=' not in line:
+                current_analysis='sequence'
+            if 'if_instance' in line and '=' not in line:
+                current_analysis='if_instance'
+            if 'vip' in line and '=' not in line:
+                current_analysis='vip'
+            if '}' in line and '=' not in line:
+                current_analysis=current_analysis
+
+            if current_analysis == 'agent':
+                tbSplit_agent.append(line)
+            if current_analysis == 'comp':
+                tbSplit_comp.append(line)
+            if current_analysis == 'signal':
+                tbSplit_signal.append(line)
+            if current_analysis == 'field':
+                tbSplit_field.append(line)
+            if current_analysis == 'clock':
+                tbSplit_clock.append(line)
+            if current_analysis == 'reset':
+                tbSplit_reset.append(line)
+            if current_analysis == 'interface':
+                tbSplit_interface.append(line)
+            if current_analysis == 'transaction':
+                tbSplit_transa.append(line)
+            if current_analysis == 'refmod':
+                tbSplit_refmod.append(line)
+            if current_analysis == 'module':
+                tbSplit_module.append(line)
+            if current_analysis == 'test':
+                tbSplit_test.append(line)
+            if current_analysis == 'sequence':
+                tbSplit_sequence.append(line)
+            if current_analysis == 'if_instance':
+                tbSplit_if_instance.append(line)
+            if current_analysis == 'vip':
+                tbSplit_vip.append(line)
+            if current_analysis == 'NONE':
+                pass
+
+        list_agent = []
+        list_comp = []
+        list_signal = []
+        list_field = []
+        list_clock = []
+        list_reset = []
+        list_interface = []
+        list_if_instance = []
+        list_transa = []
+        list_refmod = []
+        list_test = []
+        list_sequence = []
+        list_vip = []
+
+        for line in tbSplit_module:
+            if 'module' in line and '=' not in line:
+                auxName = ''
+
+            if 'name' in line:
+                string = line.split("=", 1)
+                auxName = string[1]
+                auxName = auxName.replace(" ","")
+
+            if '}' in line:
+                moduleName = auxName
+
+        for line in tbSplit_clock:
+            if 'clock' in line and '=' not in line:
+                auxName = 'NONE'
+                auxPeriod = 'NONE'
+
+            if 'name' in line:
+                string = line.split("=", 1)
+                auxName = string[1]
+                auxName = auxName.replace(" ","")
+
+            if 'period' in line:
+                string = line.split("=", 1)
+                auxPeriod = string[1]
+                auxPeriod = auxPeriod.replace(" ","")
+
+            if '}' in line:
+                auxClock = Clock(auxName, auxPeriod)
+                list_clock.append(auxClock)
+
+        for line in tbSplit_reset:
+            if 'reset' in line and '=' not in line:
+                auxName = 'NONE'
+                auxPeriod = 'NONE'
+                auxDuration = 'NONE'
+
+            if 'name' in line:
+                string = line.split("=", 1)
+                auxName = string[1]
+                auxName = auxName.replace(" ","")
+
+            if 'period' in line:
+                string = line.split("=", 1)
+                auxPeriod = string[1]
+                auxPeriod = auxPeriod.replace(" ","")
+
+            if 'duration' in line:
+                string = line.split("=", 1)
+                auxDuration = string[1]
+                auxDuration = auxDuration.replace(" ","")
+
+            if '}' in line:
+                auxReset = Reset(auxName, auxPeriod, auxDuration)
+                list_reset.append(auxReset)
+
+        for line in tbSplit_signal:
+            if 'signal' in line and '=' not in line:
+                auxName = 'NONE'
+                auxType = 'NONE'
+                auxIo = 'NONE'
+                auxConnect = 'NONE'
+
+            if 'name' in line:
+                string = line.split("=", 1)
+                auxName = string[1]
+                auxName = auxName.replace(" ","")
+
+            if 'type' in line:
+                string = line.split("=", 1)
+                auxType = string[1]
+                auxType = auxType.replace(" ","")
+
+            if 'io' in line:
+                string = line.split("=", 1)
+                auxIo = string[1]
+                auxIo = auxIo.replace(" ","")
+
+            if '}' in line:
+                auxSignal = Signal(auxName, auxType, auxIo)
+                list_signal.append(auxSignal)
+        
+        
+        Dut = Module(moduleName)
+
+        for uClock in list_clock:
+            Dut.addClock(uClock)
+
+        for uReset in list_reset:
+            Dut.addReset(uReset)
+
+        for uSignal in list_signal:
+            Dut.addSignal(uSignal)
+
+        Dut.writeModule(self.outputdir)
+
 
 
 def display_title_bar():
@@ -1459,9 +1700,10 @@ def display_title_bar():
     print(Fore.BLUE + "# generation.                                   ")
     print(Fore.BLUE + "################################################")
     print(Fore.BLUE + "################################################")
+    print(Fore.BLUE + "# Aurora Integrated Generation ")
     print(Fore.BLUE + "# Author: Jose Iuri Barbosa de Brito            ")
     print(Fore.BLUE + "# MIT License                                   ")
-    print(Fore.BLUE + "# Copyright: Copyright (c) 2020, XGeneratorTB")
+    print(Fore.BLUE + "# Copyright: Copyright (c) 2020, XMEN Lab - Universidade federal de Campina Grande")
     print(Fore.BLUE + "# Credits: ")
     print(Fore.BLUE + "# Version: 0.1")
     print(Fore.BLUE + "# Maintainer: Jose Iuri Barbosa de Brio")
@@ -1469,59 +1711,156 @@ def display_title_bar():
     print(Fore.BLUE + "# Status: In Progress")
     print(Fore.BLUE + "################################################\n\n")
 
+class CapitalisedHelpFormatter(argparse.HelpFormatter):
+    def add_usage(self, usage, actions, groups, prefix=None):
+        if prefix is None:
+            prefix = 'Usage: '
+        return super(CapitalisedHelpFormatter, self).add_usage(
+            usage, actions, groups, prefix)
+
+    def _format_action_invocation(self, action):
+        if not action.option_strings or action.nargs == 0:
+            return super()._format_action_invocation(action)
+        default = self._get_default_metavar_for_optional(action)
+        args_string = self._format_args(action, default)
+        return ', '.join(action.option_strings) + ' ' + args_string
 
 def main(argv):
 
     inputfile = ''
-    outputdir = ''
+    outputdir = './'
 
-    try:
-      opts, args = getopt.getopt(argv,"hi:o:",["ifile=","odir="])
-    except getopt.GetoptError:
-      print ('xgtb.py -i <inputfile> -o <outputdir>')
-      sys.exit(2)
+    mode = ''
 
-    for opt, arg in opts:
-      if opt == '-h':
-         print ('xgtb.py -i <inputfile> -o <outputdir>')
-         sys.exit()
-      elif opt in ("-i", "--ifile"):
-         inputfile = arg
-      elif opt in ("-o", "--ofile"):
-         outputdir = arg
+    help_s = """Aurora Integrated Workflow v0.1 (c) Copyright 2020, XMEN Lab - Universidade Federal de Campina Grande"""
 
-    verification_path =  Path(outputdir)
 
-    display_title_bar()
+    parser_arg = argparse.ArgumentParser(description=help_s, allow_abbrev=False, formatter_class=CapitalisedHelpFormatter)
 
-    verification_path = verification_path / 'verification'
-    Path(verification_path).mkdir(parents=True, exist_ok=True)
-    doc_path = verification_path / 'docs'
-    Path(doc_path).mkdir(parents=True, exist_ok=True)
-    tb_path = verification_path / 'tb'
-    Path(tb_path).mkdir(parents=True, exist_ok=True)
+    parser_arg._positionals.title = 'Positional arguments'
 
-    Path(verification_path / 'logs').mkdir(parents=True, exist_ok=True)
-    Path(verification_path / 'reports').mkdir(parents=True, exist_ok=True)
-    Path(verification_path / 'scripts').mkdir(parents=True, exist_ok=True)
+    parser_arg._optionals.title = 'Optional arguments'
 
-    Path(verification_path / 'scripts' / 'gatesim').mkdir(parents=True, exist_ok=True)
-    Path(verification_path / 'scripts' / 'rtlsim').mkdir(parents=True, exist_ok=True)
-    Path(verification_path / 'scripts' / 'verif_manager').mkdir(parents=True, exist_ok=True)
+    parser_arg.add_argument("mode", type=str, help="Choose the mode for generation (verif|fe)")
 
-    Path(verification_path / 'src').mkdir(parents=True, exist_ok=True)
-    Path(verification_path / 'vplan').mkdir(parents=True, exist_ok=True)
-    Path(verification_path / 'workspace').mkdir(parents=True, exist_ok=True)
+    parser_arg.add_argument("-i","--ifile", type=str, required=True, help="Select the input configuration file", metavar="input_file")
 
-    print(Fore.BLUE + "# GENERATING DIRECTORIES IN " + str(verification_path) + "\n")
-    print(Fore.BLUE + "################################################\n\n")
+    parser_arg.add_argument("-o","--odir", type=str, required=False, help="Select the output directory", default='./', metavar="output_dir")
 
-    outputdir = outputdir + '/verification/tb'
-    uParser = Parser('Parser', inputfile, outputdir)
+    args = parser_arg.parse_args()
+    mode = args.mode
+    inputfile = args.ifile
+    outputdir = args.odir
 
-    print(Fore.BLUE + "# GENERATING FILES \n")
-    print(Fore.BLUE + "################################################\n\n")
-    uParser.parse()
+    if (mode == 'verif') :
+
+        verification_path =  Path(outputdir)
+
+        display_title_bar()
+
+        verification_path = verification_path / 'verification'
+        Path(verification_path).mkdir(parents=True, exist_ok=True)
+        doc_path = verification_path / 'docs'
+        Path(doc_path).mkdir(parents=True, exist_ok=True)
+        tb_path = verification_path / 'tb'
+        Path(tb_path).mkdir(parents=True, exist_ok=True)
+
+        Path(verification_path / 'logs').mkdir(parents=True, exist_ok=True)
+        Path(verification_path / 'reports').mkdir(parents=True, exist_ok=True)
+        Path(verification_path / 'scripts').mkdir(parents=True, exist_ok=True)
+
+        Path(verification_path / 'scripts' / 'gatesim').mkdir(parents=True, exist_ok=True)
+        Path(verification_path / 'scripts' / 'rtlsim').mkdir(parents=True, exist_ok=True)
+        Path(verification_path / 'scripts' / 'verif_manager').mkdir(parents=True, exist_ok=True)
+
+        Path(verification_path / 'src').mkdir(parents=True, exist_ok=True)
+        Path(verification_path / 'vplan').mkdir(parents=True, exist_ok=True)
+        Path(verification_path / 'workspace').mkdir(parents=True, exist_ok=True)
+
+        Path(verification_path / 'formal').mkdir(parents=True, exist_ok=True)
+        Path(verification_path / 'formal' / 'properties').mkdir(parents=True, exist_ok=True)
+
+        print(Fore.BLUE + "# GENERATING DIRECTORIES IN " + str(verification_path) + "\n")
+        print(Fore.BLUE + "################################################\n\n")
+
+        outputdir = outputdir + '/verification/tb'
+        uParser = Parser('Parser', inputfile, outputdir)
+
+        print(Fore.BLUE + "# GENERATING FILES \n")
+        print(Fore.BLUE + "################################################\n\n")
+        uParser.parse_verif()
+    
+    elif (mode == 'fe'):
+        
+        frontend_path =  Path(outputdir)
+
+        display_title_bar()
+
+        frontend_path = frontend_path / 'frontend'
+        Path(frontend_path).mkdir(parents=True, exist_ok=True)
+        doc_path = frontend_path / 'docs'
+        Path(doc_path).mkdir(parents=True, exist_ok=True)
+
+
+        Path(frontend_path / 'logs').mkdir(parents=True, exist_ok=True)
+        Path(frontend_path / 'logs' / 'gatesim').mkdir(parents=True, exist_ok=True)
+        Path(frontend_path / 'logs' / 'lec').mkdir(parents=True, exist_ok=True)
+        Path(frontend_path / 'logs' / 'power').mkdir(parents=True, exist_ok=True)
+        Path(frontend_path / 'logs' / 'rtlsim').mkdir(parents=True, exist_ok=True)
+        Path(frontend_path / 'logs' / 'synth_logic').mkdir(parents=True, exist_ok=True)
+
+        Path(frontend_path / 'reports').mkdir(parents=True, exist_ok=True)
+        Path(frontend_path / 'reports' / 'gatesim').mkdir(parents=True, exist_ok=True)
+        Path(frontend_path / 'reports' / 'lec').mkdir(parents=True, exist_ok=True)
+        Path(frontend_path / 'reports' / 'power').mkdir(parents=True, exist_ok=True)
+        Path(frontend_path / 'reports' / 'rtlsim').mkdir(parents=True, exist_ok=True)
+        Path(frontend_path / 'reports' / 'synth_logic').mkdir(parents=True, exist_ok=True)
+
+        Path(frontend_path / 'scripts').mkdir(parents=True, exist_ok=True)
+        Path(frontend_path / 'scripts' / 'gatesim').mkdir(parents=True, exist_ok=True)
+        Path(frontend_path / 'scripts' / 'lec').mkdir(parents=True, exist_ok=True)
+        Path(frontend_path / 'scripts' / 'power').mkdir(parents=True, exist_ok=True)
+        Path(frontend_path / 'scripts' / 'rtlsim').mkdir(parents=True, exist_ok=True)
+        Path(frontend_path / 'scripts' / 'synth_logic').mkdir(parents=True, exist_ok=True)
+
+        Path(frontend_path / 'parasitics').mkdir(parents=True, exist_ok=True)
+
+        Path(frontend_path / 'rtl').mkdir(parents=True, exist_ok=True)
+        Path(frontend_path / 'rtl' / 'src').mkdir(parents=True, exist_ok=True)
+        Path(frontend_path / 'rtl' / 'tb').mkdir(parents=True, exist_ok=True)
+
+        Path(frontend_path / 'software').mkdir(parents=True, exist_ok=True)
+        Path(frontend_path / 'software' / 'api').mkdir(parents=True, exist_ok=True)
+        Path(frontend_path / 'software' / 'apps').mkdir(parents=True, exist_ok=True)
+
+        Path(frontend_path / 'structural').mkdir(parents=True, exist_ok=True)
+        
+        Path(frontend_path / 'switching').mkdir(parents=True, exist_ok=True)
+        
+        Path(frontend_path / 'timing').mkdir(parents=True, exist_ok=True)
+
+        Path(frontend_path / 'workspace').mkdir(parents=True, exist_ok=True)
+        Path(frontend_path / 'workspace' / 'gatesim').mkdir(parents=True, exist_ok=True)
+        Path(frontend_path / 'workspace' / 'lec').mkdir(parents=True, exist_ok=True)
+        Path(frontend_path / 'workspace' / 'power').mkdir(parents=True, exist_ok=True)
+        Path(frontend_path / 'workspace' / 'rtlsim').mkdir(parents=True, exist_ok=True)
+        Path(frontend_path / 'workspace' / 'synth_logic').mkdir(parents=True, exist_ok=True)
+
+        print(Fore.BLUE + "# GENERATING DIRECTORIES IN " + str(frontend_path) + "\n")
+        print(Fore.BLUE + "################################################\n\n")
+
+        outputdir = outputdir + '/frontend'
+
+        print(Fore.BLUE + "# GENERATING FILES \n")
+        print(Fore.BLUE + "################################################\n\n")
+
+        uParser = Parser('Parser', inputfile, outputdir)
+        uParser.parse_fe()
+
+    else:
+        pass
+        # print (help_s)
+        # sys.exit(2)
 
 
 if __name__== "__main__" :
