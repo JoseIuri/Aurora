@@ -12,7 +12,7 @@
 
 ## Getting Started
 
-Implements an Automatic reference flow creator based on Python and template files. This software automatize creation of testbenchs vor hardware verification in UVM, and all the the connections between the UVM Componnents in the environment based on a configuration as a input for code generation. This tool also generate the frontend directories and also let them use formal assertions as part of their development process, same as in TDD.
+Implements an Automatic reference flow creator based on Python and template files. This software automatize creation of testbenchs for hardware verification in UVM, and all the the connections between the UVM Componnents in the environment based on a configuration as a input for code generation. This tool also generate the frontend directories and also let them use formal assertions as part of their development process, same as in TDD.
 
 ### Prerequisites
 
