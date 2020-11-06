@@ -32,7 +32,7 @@ Packages:
 To run the software use this command line from rundir folder:
 
 ```
-python3 ../scripts/aurora.py (verif/fe) -i <input_configuration_file> -o <output-directory>
+python3 ../scripts/aurora.py (verif|fe) -i <input_configuration_file> -o <output-directory>
 ```
 
 
