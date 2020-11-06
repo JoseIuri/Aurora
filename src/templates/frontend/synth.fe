@@ -23,9 +23,7 @@ set _LOG_PATH $SYNDIR/logs_${DATE}
 #set_db / .script_search_path {. <path>} 
 
 #Leitura da lista de arquivos a serem sintetizados
-set rtl_list_file [open "rtl_list.txt" r]
-set rtl_list [read $rtl_list_file]
-close $rtl_list_file
+set rtl_list [glob ../../rtl/src/*.sv]
 
 ##Uncomment and specify machine names to enable super-threading.
 ##set_db / .super_thread_servers {<machine names>} 

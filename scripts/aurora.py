@@ -746,7 +746,25 @@ class Synth:
             tbTcl=file.read()
 
         tbTcl = tbTcl.replace('|-MODULE-|', self.name)
+        tbTcl = tbTcl.replace('|-TECHLIBASE-|', self.pdk)
+
+        for idx,uFile in enumerate(self.pdk_files):
+            tbTcl = tbTcl.replace('|-TECHLIBPATH-|', '$TECHLIBBASE' + uFile + ' \ ' + '\n                    |-TECHLIBPATH-|')
+
+        tbTcl = tbTcl.replace(' \ \n                    |-TECHLIBPATH-|', '')
+        
     
+        tcl_file = open(output_dir + '/scripts/synth_logic/synth.tcl', "wt")
+        n = tcl_file.write(tbTcl)
+        tcl_file.close()
+
+    def writeMakefile(Self, output_dir):
+        with open(os.path.dirname(os.path.realpath(__file__)) + '/../src/templates/frontend/makefile_synth.fe', 'r') as file:
+            tbMake=file.read()
+
+        mk_file = open(output_dir + '/scripts/synth_logic/Makefile', "wt")
+        n = mk_file.write(tbMake)
+        mk_file.close()
 
 class Package:
     def __init__(self, name):
@@ -1492,97 +1510,44 @@ class Parser:
 
         tbConfig_Split = tbConfig_Split.splitlines()
 
-        tbSplit_agent = []
-        tbSplit_comp = []
         tbSplit_signal = []
-        tbSplit_field = []
         tbSplit_clock = []
         tbSplit_reset = []
-        tbSplit_interface = []
-        tbSplit_transa = []
-        tbSplit_refmod = []
         tbSplit_module = []
-        tbSplit_test = []
-        tbSplit_sequence = []
-        tbSplit_if_instance = []
-        tbSplit_vip = []
+        tbSplit_pdk = []
 
         for line in tbConfig_Split:
-            if 'agent' in line and '=' not in line:
-                current_analysis='agent'
-            if 'comp' in line and '=' not in line:
-                current_analysis='comp'
             if 'signal' in line and '=' not in line:
                 current_analysis='signal'
-            if 'field' in line and '=' not in line:
-                current_analysis='field'
             if 'clock' in line and '=' not in line:
                 current_analysis='clock'
             if 'reset' in line and '=' not in line:
                 current_analysis='reset'
-            if 'interface' in line and '=' not in line:
-                current_analysis='interface'
-            if 'transaction' in line and '=' not in line:
-                current_analysis='transaction'
-            if 'refmod' in line and '=' not in line:
-                current_analysis='refmod'
             if 'module' in line and '=' not in line:
                 current_analysis='module'
-            if 'test' in line and '=' not in line:
-                current_analysis='test'
-            if 'sequence' in line and '=' not in line:
-                current_analysis='sequence'
-            if 'if_instance' in line and '=' not in line:
-                current_analysis='if_instance'
-            if 'vip' in line and '=' not in line:
-                current_analysis='vip'
+            if 'pdk' in line and '=' not in line:
+                current_analysis='pdk'
             if '}' in line and '=' not in line:
                 current_analysis=current_analysis
 
-            if current_analysis == 'agent':
-                tbSplit_agent.append(line)
-            if current_analysis == 'comp':
-                tbSplit_comp.append(line)
             if current_analysis == 'signal':
                 tbSplit_signal.append(line)
-            if current_analysis == 'field':
-                tbSplit_field.append(line)
             if current_analysis == 'clock':
                 tbSplit_clock.append(line)
             if current_analysis == 'reset':
                 tbSplit_reset.append(line)
-            if current_analysis == 'interface':
-                tbSplit_interface.append(line)
-            if current_analysis == 'transaction':
-                tbSplit_transa.append(line)
-            if current_analysis == 'refmod':
-                tbSplit_refmod.append(line)
             if current_analysis == 'module':
                 tbSplit_module.append(line)
-            if current_analysis == 'test':
-                tbSplit_test.append(line)
-            if current_analysis == 'sequence':
-                tbSplit_sequence.append(line)
-            if current_analysis == 'if_instance':
-                tbSplit_if_instance.append(line)
-            if current_analysis == 'vip':
-                tbSplit_vip.append(line)
+            if current_analysis == 'pdk':
+                tbSplit_pdk.append(line)
             if current_analysis == 'NONE':
                 pass
 
-        list_agent = []
-        list_comp = []
         list_signal = []
-        list_field = []
         list_clock = []
         list_reset = []
-        list_interface = []
-        list_if_instance = []
-        list_transa = []
-        list_refmod = []
-        list_test = []
-        list_sequence = []
-        list_vip = []
+        list_pdk_files = []
+        list_synth_Script = []
 
         for line in tbSplit_module:
             if 'module' in line and '=' not in line:
@@ -1665,6 +1630,36 @@ class Parser:
             if '}' in line:
                 auxSignal = Signal(auxName, auxType, auxIo)
                 list_signal.append(auxSignal)
+
+        for line in tbSplit_pdk:
+            if 'pdk' in line and '=' not in line:
+                auxName = 'NONE'
+                auxDir = 'NONE'
+                auxFile = 'NONE'
+
+            if 'name' in line:
+                string = line.split("=", 1)
+                auxName = string[1]
+                auxName = auxName.replace(" ","")
+
+            if 'dir' in line:
+                string = line.split("=", 1)
+                auxDir = string[1]
+                auxDir = auxDir.replace(" ","")
+
+            if 'file' in line:
+                string = line.split("=", 1)
+                auxFile = string[1]
+                auxFile = auxFile.replace(" ","")
+                list_pdk_files.append(auxFile)
+                
+            if '}' in line:
+                auxSynth = Synth(moduleName)
+                auxSynth.setPDK(auxDir)
+                for file_s in list_pdk_files:
+                    auxSynth.addPDKFile(file_s)
+
+                list_synth_Script.append(auxSynth)
         
         
         Dut = Module(moduleName)
@@ -1679,6 +1674,11 @@ class Parser:
             Dut.addSignal(uSignal)
 
         Dut.writeModule(self.outputdir)
+
+        for uSynth in list_synth_Script:
+            uSynth.writeTcl(self.outputdir)
+            uSynth.writeMakefile(self.outputdir)
+        
 
 
 

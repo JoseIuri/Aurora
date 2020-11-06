@@ -27,3 +27,10 @@ name=reset
 period=3e12
 duration=180
 }
+
+pdk{
+name=xfab
+dir=/example/xfab/test
+file=bloblo/blabla
+file=blablo/blablu
+}
