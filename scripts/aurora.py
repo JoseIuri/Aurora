@@ -804,6 +804,97 @@ endpackage""".format(MODULE=self.name)
         n = pkg_file.write(pkg)
         pkg_file.close()
 
+class Formal:
+    def __init__(self, name):
+        self.name = name
+        self.clock = []
+        self.reset = []
+        self.signal = []
+    
+    def addSignal(self, signal):
+        self.signal.append(signal)
+
+    def addClock(self, clock):
+        self.clock.append(clock)
+    
+    def addReset(self, reset):
+        self.reset.append(reset) 
+    
+    def writeVerifModule(self, output_dir):
+        with open(os.path.dirname(os.path.realpath(__file__)) + '/../src/templates/verification/module_assertions.tb', 'r') as file:
+            tbVMod=file.read()
+
+        tbVMod = tbVMod.replace('|-MODULE-|', self.name)
+        
+        for idx,uClock in enumerate(self.clock):
+            tbVMod = tbVMod.replace('|-SIGNALS-|', 'input logic ' + uClock.name +',\n\t\t|-SIGNALS-|')
+
+        for idx,uReset in enumerate(self.reset):
+            tbVMod = tbVMod.replace('|-SIGNALS-|', 'input logic ' + uReset.name +',\n\t\t|-SIGNALS-|')
+
+        for uSignal in self.signal:
+            tbVMod = tbVMod.replace('|-SIGNALS-|', 'input' + ' ' + uSignal.type + ' ' + uSignal.name + ',\n\t\t|-SIGNALS-|')
+        
+        
+        tbVMod = tbVMod.replace(',\n\t\t|-SIGNALS-|', '')
+    
+        vmodule_file = open(output_dir + '../formal/properties/v_' + self.name + '.sva', "wt")
+        n = vmodule_file.write(tbVMod)
+        vmodule_file.close()
+
+        with open(os.path.dirname(os.path.realpath(__file__)) + '/../src/templates/verification/bidings.tb', 'r') as file:
+            tbBind=file.read()
+
+        tbBind = tbBind.replace('|-MODULE-|', self.name)
+
+        for idx,uClock in enumerate(self.clock):
+            tbBind = tbBind.replace('|-SIGNALS-|', '.' + uClock.name + '(' + uClock.name + ')' +',\n\t\t|-SIGNALS-|')
+
+        for idx,uReset in enumerate(self.reset):
+            tbBind = tbBind.replace('|-SIGNALS-|', '.' + uReset.name + '(' + uReset.name + ')' +',\n\t\t|-SIGNALS-|')
+
+        for uSignal in self.signal:
+            tbBind = tbBind.replace('|-SIGNALS-|', '.' + uSignal.name + '(' + uSignal.name + ')' +',\n\t\t|-SIGNALS-|')
+
+        tbBind = tbBind.replace(',\n\t\t|-SIGNALS-|', '')
+
+        bidings_file = open(output_dir + '../formal/properties/bidings.sva', "wt")
+        n = bidings_file.write(tbBind)
+        bidings_file.close()
+    
+    def writeTcl(self, output_dir):
+        
+        with open(os.path.dirname(os.path.realpath(__file__)) + '/../src/templates/verification/fpv.tb', 'r') as file:
+            tbTcl=file.read()
+
+        tbTcl = tbTcl.replace('|-MODULE-|', self.name)
+
+        for idx,uClock in enumerate(self.clock):
+            tbBind = tbBind.replace('|-CLOCK-|', 'clock ' + uClock.name +'\n|-CLOCK-|')
+
+        for idx,uReset in enumerate(self.reset):
+            tbBind = tbBind.replace('|-RESET-|', 'reset ~' + uReset.name +'\n|-RESET-|')
+
+        tbBind = tbBind.replace('|-CLOCK-|', '')
+        tbBind = tbBind.replace('|-RESET-|', '') 
+    
+        tcl_file = open(output_dir + '../scripts/formal/formal.tcl', "wt")
+        n = tcl_file.write(tbTcl)
+        tcl_file.close()
+
+    def writeMakefile(Self, output_dir):
+        with open(os.path.dirname(os.path.realpath(__file__)) + '/../src/templates/verification/formal_mk.tb', 'r') as file:
+            tbMake=file.read()
+
+        if 'verificication' in output_dir:
+            mk_file = open(output_dir + '../scripts/formal/Makefile', "wt")
+            n = mk_file.write(tbMake)
+            mk_file.close()
+        else:
+            tbMake = tbMake.replace('-fpv ', '-fpv ../../../verification/scripts/formal/')
+            mk_file = open(output_dir + '/rtl/tb/Makefile', "wt")
+            n = mk_file.write(tbMake)
+            mk_file.close()
 
 class Parser:
 
@@ -1501,6 +1592,12 @@ class Parser:
             pkg.addVip(uVip)
 
         pkg.writePackage(self.outputdir)
+
+        formal = Formal(moduleName)
+
+        formal.writeMakefile(self.outputdir)
+        formal.writeTcl(self.outputdir)
+        formal.writeVerifModule(self.outputdir)
     
     def parse_fe(self):
         with open(self.inputfile, 'r') as file:
@@ -1679,13 +1776,16 @@ class Parser:
             uSynth.writeTcl(self.outputdir)
             uSynth.writeMakefile(self.outputdir)
         
+        formal = Formal(moduleName)
+
+        formal.writeMakefile(self.outputdir)
 
 
 
 def display_title_bar():
 
     # Clears the terminal screen, and displays a title bar.
-    print(Fore.BLUE + "################################################")
+    print(Fore.BLUE + "##################################################")
     print(Fore.BLUE + "           ▀▄ ▄▀  █▀▄▀█  █▀▀▀  █▄  █           ")
     print(Fore.BLUE + "             █    █ █ █  █▀▀▀  █ █ █           ")
     print(Fore.BLUE + "           ▄▀ ▀▄  █   █  █▄▄▄  █  ▀█           ")
@@ -1693,23 +1793,23 @@ def display_title_bar():
     print(Fore.BLUE + "                █     █▀▀█  █▀▀█               ")
     print(Fore.BLUE + "                █     █▄▄█  █▀▀▄               ")
     print(Fore.BLUE + "                █▄▄█  █  █  █▄▄█               ")
-    print(Fore.BLUE + "################################################")
-    print(Fore.BLUE + "################################################")
-    print(Fore.BLUE + "# This script is used to automate generation of ")
-    print(Fore.BLUE + "# UVM Testbench Follow the steps to finish the  ")
-    print(Fore.BLUE + "# generation.                                   ")
-    print(Fore.BLUE + "################################################")
-    print(Fore.BLUE + "################################################")
-    print(Fore.BLUE + "# Aurora Integrated Generation ")
+    print(Fore.BLUE + "##################################################")
+    print(Fore.BLUE + "##################################################")
+    print(Fore.BLUE + "# This script is used to automate generation of   ")
+    print(Fore.BLUE + "# Reference flow for hardware projects in Frontend")
+    print(Fore.BLUE + "# and Verification.                               ")
+    print(Fore.BLUE + "##################################################")
+    print(Fore.BLUE + "##################################################")
+    print(Fore.BLUE + "# Aurora Integrated Reference Flow Generation ")
     print(Fore.BLUE + "# Author: Jose Iuri Barbosa de Brito            ")
     print(Fore.BLUE + "# MIT License                                   ")
-    print(Fore.BLUE + "# Copyright: Copyright (c) 2020, XMEN Lab - Universidade federal de Campina Grande")
+    print(Fore.BLUE + "# Copyright: Copyright (c) 2020, XMEN Lab - Universidade Federal de Campina Grande")
     print(Fore.BLUE + "# Credits: ")
-    print(Fore.BLUE + "# Version: 0.1")
+    print(Fore.BLUE + "# Version: 0.2")
     print(Fore.BLUE + "# Maintainer: Jose Iuri Barbosa de Brio")
     print(Fore.BLUE + "# Email: jose.brito@embedded.ufcg.edu.br")
     print(Fore.BLUE + "# Status: In Progress")
-    print(Fore.BLUE + "################################################\n\n")
+    print(Fore.BLUE + "##################################################\n\n")
 
 class CapitalisedHelpFormatter(argparse.HelpFormatter):
     def add_usage(self, usage, actions, groups, prefix=None):
@@ -1732,7 +1832,7 @@ def main(argv):
 
     mode = ''
 
-    help_s = """Aurora Integrated Workflow v0.1 (c) Copyright 2020, XMEN Lab - Universidade Federal de Campina Grande"""
+    help_s = """Aurora Integrated Workflow v0.2 (c) Copyright 2020, XMEN Lab - Universidade Federal de Campina Grande"""
 
 
     parser_arg = argparse.ArgumentParser(description=help_s, allow_abbrev=False, formatter_class=CapitalisedHelpFormatter)
@@ -1772,6 +1872,7 @@ def main(argv):
         Path(verification_path / 'scripts' / 'gatesim').mkdir(parents=True, exist_ok=True)
         Path(verification_path / 'scripts' / 'rtlsim').mkdir(parents=True, exist_ok=True)
         Path(verification_path / 'scripts' / 'verif_manager').mkdir(parents=True, exist_ok=True)
+        Path(verification_path / 'scripts' / 'formal').mkdir(parents=True, exist_ok=True)
 
         Path(verification_path / 'src').mkdir(parents=True, exist_ok=True)
         Path(verification_path / 'vplan').mkdir(parents=True, exist_ok=True)
@@ -1781,13 +1882,13 @@ def main(argv):
         Path(verification_path / 'formal' / 'properties').mkdir(parents=True, exist_ok=True)
 
         print(Fore.BLUE + "# GENERATING DIRECTORIES IN " + str(verification_path) + "\n")
-        print(Fore.BLUE + "################################################\n\n")
+        print(Fore.BLUE + "##################################################\n\n")
 
         outputdir = outputdir + '/verification/tb'
         uParser = Parser('Parser', inputfile, outputdir)
 
         print(Fore.BLUE + "# GENERATING FILES \n")
-        print(Fore.BLUE + "################################################\n\n")
+        print(Fore.BLUE + "##################################################\n\n")
         uParser.parse_verif()
     
     elif (mode == 'fe'):

@@ -1,0 +1,4 @@
+bind |-MODULE-|
+  v_|-MODULE-| i_|-MODULE-| (
+  |-SIGNALS-|
+);
