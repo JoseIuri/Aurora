@@ -239,7 +239,7 @@ class Port:
         self.origin = origin
         self.transaction = transaction
         self.endComp = endComp
-    
+
     def setEndComp(self, endComp):
         self.endComp = endComp
 
@@ -417,10 +417,10 @@ class Vip:
         self.file_package = file_package
         self.port = []
         self.include = []
-    
+
     def addPort(self, tlm_port):
         self.port.append(tlm_port)
-    
+
     def addInclude(self, include_file):
         self.include.append(include_file)
 
@@ -441,7 +441,7 @@ class Env:
 
     def addAgent(self, agent):
         self.agent.append(agent)
-    
+
     def addVip(self, vip):
         self.vip.append(vip)
 
@@ -575,6 +575,7 @@ class Module:
         self.env = []
         self.agent = []
         self.vip = []
+        self.test = []
 
     def addSignal(self, signal):
         self.signal.append(signal)
@@ -593,9 +594,12 @@ class Module:
 
     def addAgent(self, agent):
         self.agent.append(agent)
-    
+
     def addVip(self, vip):
         self.vip.append(vip)
+
+    def addTest(self, test):
+        self.test.append(test)
 
     def writeWrapper(self, outputdir):
         with open(os.path.dirname(os.path.realpath(__file__)) + '/../src/templates/verification/wrapper.tb', 'r') as file:
@@ -605,7 +609,7 @@ class Module:
 
         for idx,uAgent in enumerate(self.agent):
             tbWrapper = tbWrapper.replace('|-INTERFACE-|', uAgent.interface.name + ' ' + uAgent.interface.instance + '_if' +',\n\t|-INTERFACE-|')
-        
+
         for idx,uVip in enumerate(self.vip):
             tbWrapper = tbWrapper.replace('|-INTERFACE-|', uVip.interface.name + ' ' + uVip.interface.instance + '_if' +',\n\t|-INTERFACE-|')
 
@@ -720,27 +724,60 @@ class Module:
 
         for uSignal in self.signal:
                 tbModule = tbModule.replace('|-SIGNALS-|', uSignal.io + ' ' + uSignal.type + ' ' + uSignal.name + ',\n\t\t|-SIGNALS-|')
-        
+
 
         tbModule = tbModule.replace(',\n\t\t|-SIGNALS-|', '')
 
         module_file = open(outputdir + '/rtl/src/' + self.name + ".sv", "wt")
         n = module_file.write(tbModule)
         module_file.close()
-    
+
+    def writeMakefile(self,  outputdir):
+        with open(os.path.dirname(os.path.realpath(__file__)) + '/../src/templates/verification/makefile_verif.tb', 'r') as file:
+            tbMakefile=file.read()
+
+        tbMakefile = tbMakefile.replace('|-MODULE-|', self.name)
+
+        aux_files = []
+        for idx, uAgent in enumerate(self.agent):
+            if uAgent.interface.name not in aux_files:
+                tbMakefile = tbMakefile.replace('|-INTERFACE-|', '../tb/' + uAgent.interface.name + '_if.sv \ \n\t|-INTERFACE-|')
+
+            aux_files.append(uAgent.interface.name)
+        
+        for idx, uVip in enumerate(self.vip):
+            for idy, uInclude in enumerate(uVip.include):
+                tbMakefile = tbMakefile.replace('|-INTERFACE-|', uInclude +' \ \n\t|-INTERFACE-|')
+
+        test_string = """|-TEST-|:
+    @xrun -64bit -uvm  +incdir+$(RTL_SRC) $(PKGS) $(IF) $(RTL) $(WRAPPER) top.sv +UVM_TESTNAME=|-TEST-| -covtest |-TEST-|-$(SEED) -svseed $(SEED) -defparam top.min_cover=$(COVER) -defparam top.min_transa=$(TRANSA) $(RUN_ARGS_COMMON) $(RUN_ARGS)"""
+
+        for idx, uTest in enumerate(self.test):
+            aux_string = test_string.replace('|-TEST-|', uTest.name)
+            tbMakefile = tbMakefile.replace('|-TEST-|', aux_string + '\n\n|-TEST-|')
+
+
+        tbMakefile = tbMakefile.replace('\n\n|-TEST-|', '')
+        tbMakefile = tbMakefile.replace(' \ \n\t|-INTERFACE-|', '')
+
+        module_file = open(outputdir + "/../scripts/rtlsim/Makefile", "wt")
+        n = module_file.write(tbMakefile)
+        module_file.close()
+
+
 class Synth:
     def __init__(self, name):
         self.name = name
         self.pdk = ''
         self.pdk_files = []
 
-    
+
     def setPDK(self, pdk_dir):
         self.pdk = pdk_dir
 
     def addPDKFile(self, pdk_file):
         self.pdk_files.append(pdk_file)
-    
+
     def writeTcl(self, output_dir):
         with open(os.path.dirname(os.path.realpath(__file__)) + '/../src/templates/frontend/synth.fe', 'r') as file:
             tbTcl=file.read()
@@ -752,8 +789,8 @@ class Synth:
             tbTcl = tbTcl.replace('|-TECHLIBPATH-|', '$TECHLIBBASE' + uFile + ' \ ' + '\n                    |-TECHLIBPATH-|')
 
         tbTcl = tbTcl.replace(' \ \n                    |-TECHLIBPATH-|', '')
-        
-    
+
+
         tcl_file = open(output_dir + '/scripts/synth_logic/synth.tcl', "wt")
         n = tcl_file.write(tbTcl)
         tcl_file.close()
@@ -810,22 +847,22 @@ class Formal:
         self.clock = []
         self.reset = []
         self.signal = []
-    
+
     def addSignal(self, signal):
         self.signal.append(signal)
 
     def addClock(self, clock):
         self.clock.append(clock)
-    
+
     def addReset(self, reset):
-        self.reset.append(reset) 
-    
+        self.reset.append(reset)
+
     def writeVerifModule(self, output_dir):
         with open(os.path.dirname(os.path.realpath(__file__)) + '/../src/templates/verification/module_assertions.tb', 'r') as file:
             tbVMod=file.read()
 
         tbVMod = tbVMod.replace('|-MODULE-|', self.name)
-        
+
         for idx,uClock in enumerate(self.clock):
             tbVMod = tbVMod.replace('|-SIGNALS-|', 'input logic ' + uClock.name +',\n\t\t|-SIGNALS-|')
 
@@ -834,11 +871,11 @@ class Formal:
 
         for uSignal in self.signal:
             tbVMod = tbVMod.replace('|-SIGNALS-|', 'input' + ' ' + uSignal.type + ' ' + uSignal.name + ',\n\t\t|-SIGNALS-|')
-        
-        
+
+
         tbVMod = tbVMod.replace(',\n\t\t|-SIGNALS-|', '')
-    
-        vmodule_file = open(output_dir + '../formal/properties/v_' + self.name + '.sva', "wt")
+
+        vmodule_file = open(output_dir + '/../formal/properties/v_' + self.name + '.sva', "wt")
         n = vmodule_file.write(tbVMod)
         vmodule_file.close()
 
@@ -858,27 +895,27 @@ class Formal:
 
         tbBind = tbBind.replace(',\n\t\t|-SIGNALS-|', '')
 
-        bidings_file = open(output_dir + '../formal/properties/bidings.sva', "wt")
+        bidings_file = open(output_dir + '/../formal/properties/bidings.sva', "wt")
         n = bidings_file.write(tbBind)
         bidings_file.close()
-    
+
     def writeTcl(self, output_dir):
-        
+
         with open(os.path.dirname(os.path.realpath(__file__)) + '/../src/templates/verification/fpv.tb', 'r') as file:
             tbTcl=file.read()
 
         tbTcl = tbTcl.replace('|-MODULE-|', self.name)
 
         for idx,uClock in enumerate(self.clock):
-            tbBind = tbBind.replace('|-CLOCK-|', 'clock ' + uClock.name +'\n|-CLOCK-|')
+            tbTcl = tbTcl.replace('|-CLOCK-|', 'clock ' + uClock.name +'\n|-CLOCK-|')
 
         for idx,uReset in enumerate(self.reset):
-            tbBind = tbBind.replace('|-RESET-|', 'reset ~' + uReset.name +'\n|-RESET-|')
+            tbTcl = tbTcl.replace('|-RESET-|', 'reset ~' + uReset.name +'\n|-RESET-|')
 
-        tbBind = tbBind.replace('|-CLOCK-|', '')
-        tbBind = tbBind.replace('|-RESET-|', '') 
-    
-        tcl_file = open(output_dir + '../scripts/formal/formal.tcl', "wt")
+        tbTcl = tbTcl.replace('|-CLOCK-|', '')
+        tbTcl = tbTcl.replace('|-RESET-|', '')
+
+        tcl_file = open(output_dir + '/../scripts/formal/formal.tcl', "wt")
         n = tcl_file.write(tbTcl)
         tcl_file.close()
 
@@ -886,8 +923,8 @@ class Formal:
         with open(os.path.dirname(os.path.realpath(__file__)) + '/../src/templates/verification/formal_mk.tb', 'r') as file:
             tbMake=file.read()
 
-        if 'verificication' in output_dir:
-            mk_file = open(output_dir + '../scripts/formal/Makefile', "wt")
+        if 'verification' in output_dir:
+            mk_file = open(output_dir + '/../scripts/formal/Makefile', "wt")
             n = mk_file.write(tbMake)
             mk_file.close()
         else:
@@ -1389,7 +1426,7 @@ class Parser:
                     auxAgent.setCompConn(auxComp_name)
 
                 list_agent.append(auxAgent)
-        
+
 
         for line in tbSplit_vip:
 
@@ -1432,7 +1469,7 @@ class Parser:
                 auxInclude_name = string[1]
                 auxInclude_name = auxInclude_name.replace(" ","")
                 auxInclude.append(auxInclude_name)
-            
+
             if 'tlm_port' in line:
                 string = line.split("=", 1)
                 auxConnect_name = string[1]
@@ -1450,7 +1487,7 @@ class Parser:
                     auxTransa = Transaction(auxPort_transa[idx])
                     port_create = Port(uPort, auxPort_destination[idx], auxInstance, copy.copy(auxTransa), 0)
                     auxVip.addPort(copy.copy(port_create))
-                
+
                 for idx,uInclude in enumerate(auxInclude):
                     auxVip.addInclude(uInclude)
 
@@ -1573,18 +1610,21 @@ class Parser:
 
         for idx,uAgent in enumerate(list_agent):
             Dut.addAgent(uAgent)
-        
+
         for idx,uVip in enumerate(list_vip):
             Dut.addVip(uVip)
 
         for uSignal in list_signal:
             Dut.addSignal(uSignal)
 
+        for uTest in list_test:
+            Dut.addTest(uTest)
 
         Dut.addEnv(env)
 
         Dut.writeWrapper(self.outputdir)
         Dut.writeTop(self.outputdir)
+        Dut.writeMakefile(self.outputdir)
 
         pkg = Package(moduleName)
 
@@ -1598,7 +1638,7 @@ class Parser:
         formal.writeMakefile(self.outputdir)
         formal.writeTcl(self.outputdir)
         formal.writeVerifModule(self.outputdir)
-    
+
     def parse_fe(self):
         with open(self.inputfile, 'r') as file:
             tbConfig=file.read()
@@ -1749,7 +1789,7 @@ class Parser:
                 auxFile = string[1]
                 auxFile = auxFile.replace(" ","")
                 list_pdk_files.append(auxFile)
-                
+
             if '}' in line:
                 auxSynth = Synth(moduleName)
                 auxSynth.setPDK(auxDir)
@@ -1757,8 +1797,8 @@ class Parser:
                     auxSynth.addPDKFile(file_s)
 
                 list_synth_Script.append(auxSynth)
-        
-        
+
+
         Dut = Module(moduleName)
 
         for uClock in list_clock:
@@ -1775,7 +1815,7 @@ class Parser:
         for uSynth in list_synth_Script:
             uSynth.writeTcl(self.outputdir)
             uSynth.writeMakefile(self.outputdir)
-        
+
         formal = Formal(moduleName)
 
         formal.writeMakefile(self.outputdir)
@@ -1890,9 +1930,9 @@ def main(argv):
         print(Fore.BLUE + "# GENERATING FILES \n")
         print(Fore.BLUE + "##################################################\n\n")
         uParser.parse_verif()
-    
+
     elif (mode == 'fe'):
-        
+
         frontend_path =  Path(outputdir)
 
         display_title_bar()
@@ -1935,9 +1975,9 @@ def main(argv):
         Path(frontend_path / 'software' / 'apps').mkdir(parents=True, exist_ok=True)
 
         Path(frontend_path / 'structural').mkdir(parents=True, exist_ok=True)
-        
+
         Path(frontend_path / 'switching').mkdir(parents=True, exist_ok=True)
-        
+
         Path(frontend_path / 'timing').mkdir(parents=True, exist_ok=True)
 
         Path(frontend_path / 'workspace').mkdir(parents=True, exist_ok=True)
