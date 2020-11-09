@@ -750,7 +750,7 @@ class Module:
                 tbMakefile = tbMakefile.replace('|-INTERFACE-|', uInclude +' \ \n\t|-INTERFACE-|')
 
         test_string = """|-TEST-|:
-    @xrun -64bit -uvm  +incdir+$(RTL_SRC) $(PKGS) $(IF) $(RTL) $(WRAPPER) top.sv +UVM_TESTNAME=|-TEST-| -covtest |-TEST-|-$(SEED) -svseed $(SEED) -defparam top.min_cover=$(COVER) -defparam top.min_transa=$(TRANSA) $(RUN_ARGS_COMMON) $(RUN_ARGS)"""
+    @xrun -64bit -uvm  +incdir+$(RTL_SRC) $(PKGS) $(IF) $(RTL) $(WRAPPER) top.sv +UVM_TESTNAME=|-TEST-| -covtest |-TEST-|-$(SEED) -svseed $(SEED) -defparam top.min_cover=$(COVER) -defparam top.min_transa=$(TRANSA) $(RUN_ARGS_COMMON) --xmlibdirpath workspace/rtlsim ../ $(RUN_ARGS)"""
 
         for idx, uTest in enumerate(self.test):
             aux_string = test_string.replace('|-TEST-|', uTest.name)
