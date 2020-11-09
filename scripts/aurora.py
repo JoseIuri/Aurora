@@ -1,7 +1,7 @@
 ######################################################################
-#  Project           : XGeneratorTB - Automatic Testbench Ceator
+#  Project           : Aurora Integrated Reference Flow Generation
 #
-#  File Name         : setup.py
+#  File Name         : aurora.py
 #
 #  Author            : Jose Iuri B. de Brito (XMEN LAB)
 #
