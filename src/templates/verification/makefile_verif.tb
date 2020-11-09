@@ -1,0 +1,25 @@
+RTL_SRC = ../../frontend/rtl/src/
+WRAPPER = ../tb/|-MODULE-|_wrapper.sv
+
+IF = |-INTERFACE-|
+RTL := $(shell find $(RTL_SRC) -name '*.sv')
+REFMOD =
+PKGS = ../tb/|-MODULE-|_pkg.sv
+
+SEED = 100
+COVER = 100
+TRANSA = 5000
+
+RUN_ARGS_COMMON = -access +r -input shm.tcl \
+          +uvm_set_config_int=*,recording_detail,1 -coverage all -covoverwrite
+
+|-TEST-|
+
+clean:
+	@rm -rf INCA_libs waves.shm rtlsim/* *.history *.log rtlsim/* *.key mdv.log imc.log imc.key ncvlog_*.err *.trn *.dsn .simvision/ xcelium.d simv.daidir *.so *.o *.err
+
+view_waves:
+	simvision waves.shm &
+
+view_cover:
+	imc &
