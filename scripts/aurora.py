@@ -717,10 +717,10 @@ class Module:
         tbModule = tbModule.replace('|-MODULE_NAME-|', self.name)
 
         for idx,uClock in enumerate(self.clock):
-            tbModule = tbModule.replace('|-SIGNALS-|', 'input logic ' + uClock.name +',\n\t\t|-SIGNALS-|')
+            tbModule = tbModule.replace('|-SIGNALS-|', 'input ' + uClock.name +',\n\t\t|-SIGNALS-|')
 
         for idx,uReset in enumerate(self.reset):
-            tbModule = tbModule.replace('|-SIGNALS-|', 'input logic ' + uReset.name +',\n\t\t|-SIGNALS-|')
+            tbModule = tbModule.replace('|-SIGNALS-|', 'input ' + uReset.name +',\n\t\t|-SIGNALS-|')
 
         for uSignal in self.signal:
                 tbModule = tbModule.replace('|-SIGNALS-|', uSignal.io + ' ' + uSignal.type + ' ' + uSignal.name + ',\n\t\t|-SIGNALS-|')
@@ -864,13 +864,13 @@ class Formal:
         tbVMod = tbVMod.replace('|-MODULE-|', self.name)
 
         for idx,uClock in enumerate(self.clock):
-            tbVMod = tbVMod.replace('|-SIGNALS-|', 'input logic ' + uClock.name +',\n\t\t|-SIGNALS-|')
+            tbVMod = tbVMod.replace('|-SIGNALS-|', 'input ' + uClock.name +',\n\t\t|-SIGNALS-|')
 
         for idx,uReset in enumerate(self.reset):
-            tbVMod = tbVMod.replace('|-SIGNALS-|', 'input logic ' + uReset.name +',\n\t\t|-SIGNALS-|')
+            tbVMod = tbVMod.replace('|-SIGNALS-|', 'input ' + uReset.name +',\n\t\t|-SIGNALS-|')
 
         for uSignal in self.signal:
-            tbVMod = tbVMod.replace('|-SIGNALS-|', 'input' + ' ' + uSignal.type + ' ' + uSignal.name + ',\n\t\t|-SIGNALS-|')
+            tbVMod = tbVMod.replace('|-SIGNALS-|', 'input' + ' ' + uSignal.type.replace('logic','') + ' ' + uSignal.name + ',\n\t\t|-SIGNALS-|')
 
 
         tbVMod = tbVMod.replace(',\n\t\t|-SIGNALS-|', '')
@@ -879,7 +879,7 @@ class Formal:
         n = vmodule_file.write(tbVMod)
         vmodule_file.close()
 
-        with open(os.path.dirname(os.path.realpath(__file__)) + '/../src/templates/verification/bidings.tb', 'r') as file:
+        with open(os.path.dirname(os.path.realpath(__file__)) + '/../src/templates/verification/bindings.tb', 'r') as file:
             tbBind=file.read()
 
         tbBind = tbBind.replace('|-MODULE-|', self.name)
@@ -895,7 +895,7 @@ class Formal:
 
         tbBind = tbBind.replace(',\n\t\t|-SIGNALS-|', '')
 
-        bidings_file = open(output_dir + '/../formal/properties/bidings.sva', "wt")
+        bidings_file = open(output_dir + '/../formal/properties/bindings.sva', "wt")
         n = bidings_file.write(tbBind)
         bidings_file.close()
 
@@ -1634,6 +1634,16 @@ class Parser:
         pkg.writePackage(self.outputdir)
 
         formal = Formal(moduleName)
+
+        for uSignal in list_signal:
+            formal.addSignal(uSignal)
+
+        for uClock in list_clock:
+            formal.addClock(uClock)
+
+        for uReset in list_reset:
+            formal.addReset(uReset)
+
 
         formal.writeMakefile(self.outputdir)
         formal.writeTcl(self.outputdir)
