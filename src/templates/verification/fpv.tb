@@ -5,7 +5,7 @@ set PROP_PATH ${ROOT_PATH}/verification/formal/properties
 
 set rtl_list [glob ${RTL_PATH}/*.sv]
 
-analyze -verilog ${rtl_list}
+analyze -sv ${rtl_list}
 
 # Analyze property files
 analyze -sva \

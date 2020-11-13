@@ -23,6 +23,7 @@ class |-AGENT-|_coverage extends uvm_component;
 
   protected uvm_phase running_phase;
   task run_phase(uvm_phase phase);
+    super.build_phase(phase);
     running_phase = phase;
     running_phase.raise_objection(this);
     running_phase.raise_objection(this);
@@ -31,7 +32,6 @@ class |-AGENT-|_coverage extends uvm_component;
 
   function void write(|-TRANSACTION-| t);
     tr.copy(t);
-    transa = transa + 1;
 
   endfunction: write
 endclass : |-AGENT-|_coverage

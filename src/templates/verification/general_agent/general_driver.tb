@@ -25,7 +25,7 @@ endclass : |-AGENT-|_driver
 
 function |-AGENT-|_driver::new(string name="|-AGENT-|_driver", uvm_component parent=null);
     super.new(name, parent);
-    this.tID = get_type_name().toupper();
+    this.tID = get_type_name();
 endfunction : new
 
 //------------------------------------------------------------------------------
@@ -45,15 +45,14 @@ endfunction : build_phase
 // Get and process items
 //
 task |-AGENT-|_driver::run_phase(uvm_phase phase);
+    super.build_phase(phase);
     // INIT BLOCK
     forever begin
         // Get the next data item from sequencer
         seq_item_port.get_next_item(req);
-        phase.raise_objection(this);
         // Execute the item
         this.DriveItem(req);
         seq_item_port.item_done();
-        phase.drop_objection(this);
     end
 endtask : run_phase
 

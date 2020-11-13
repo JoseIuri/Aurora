@@ -4,7 +4,7 @@
   ******************************************************************************
 **/
 class |-SEQUENCE-| extends uvm_sequence #(|-TRANSACTION-|);
-    `uvm_object_utils(|-SEQUENCE-|_sequence)
+    `uvm_object_utils(|-SEQUENCE-|)
 
     function new(string name="|-SEQUENCE-|");
         super.new(name);

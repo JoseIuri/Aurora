@@ -20,6 +20,7 @@ class |-TEST-| extends uvm_test;
     endfunction
 
     task run_phase(uvm_phase phase);
+        super.run_phase(phase);
         |-SEQUENCE_START-|
     endtask: run_phase
 

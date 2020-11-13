@@ -81,12 +81,12 @@ endfunction
 function void |-AGENT-|_agent::build_phase (uvm_phase phase);
     super.build_phase(phase);
     if(!uvm_config_db #(|-AGENT-|_agentConfig)::get(this, "|-AGENT-|_agentConfig", cfg))begin
-        `uvm_error({MSGID,"Failed to get agent's config object: |-AGENT-|_agentConfig"})
+        `uvm_error(MSGID,"Failed to get agent's config object: |-AGENT-|_agentConfig")
     end
     // Monitor is always present
-    mon = |-AGENT-|_Monitor::type_id::create("mon", this);
+    mon = |-AGENT-|_monitor::type_id::create("mon", this);
     // Only build the driver and sequencer if active
-    if(cfg.isActive == UVM_ACTIVE)begin
+    if(cfg.isActive == 1)begin
         sqr = uvm_sequencer#(|-TRANSACTION-|)::type_id::create("sqr", this);
         drv = |-AGENT-|_driver::type_id::create("drv", this);
     end
@@ -102,7 +102,7 @@ function void |-AGENT-|_agent::connect_phase (uvm_phase phase);
     mon.req.connect(ap_req);
     mon.resp.connect(ap_resp);
     // Only connect the driver and the sequencer if active
-    if(cfg.isActive == UVM_ACTIVE)
+    if(cfg.isActive == 1) begin
         drv.seq_item_port.connect(sqr.seq_item_export);
     end
     if(cfg.hasCoverage) begin

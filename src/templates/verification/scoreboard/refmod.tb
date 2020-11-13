@@ -4,7 +4,7 @@
   ******************************************************************************
 **/
 class |-REFMOD-| extends uvm_component;
-    `uvm_component_utils(|-REFMOD-|_refmod)
+    `uvm_component_utils(|-REFMOD-|)
 
     |-INPUT_TRANSA-|
     |-OUTPUT_TRANSA-|
@@ -22,6 +22,7 @@ class |-REFMOD-| extends uvm_component;
     endfunction: build_phase
 
     virtual task run_phase(uvm_phase phase);
+        super.build_phase(phase);
         super.run_phase(phase);
         forever begin
             refmod_task()

@@ -160,7 +160,7 @@ class Agent:
                 tbAgent = tbAgent.replace('uvm_analysis_port #(|-TRANSACTION-|) ap_req;', '')
                 tbAgent = tbAgent.replace('ap_req = new("ap_req", this);', '')
                 tbAgent = tbAgent.replace('mon.req.connect(ap_req);', '')
-                tbAgent = tbAgent.replace('mon.ap_req.connect(m_coverage.collected_port);', '//OUTPUT COVERAGE')
+                tbAgent = tbAgent.replace('mon.req.connect(cov.collected_port);', '//OUTPUT COVERAGE')
             else:
                 pass
 
@@ -278,10 +278,10 @@ class Refmod:
             tbRefmod = tbRefmod.replace('|-OUTPUT_TRANSA-|', uPort.transaction.name + ' ' +  'resp_' + str(idx) + ';\n\t|-OUTPUT_TRANSA-|')
 
         for idx, uPort in enumerate(self.port_in):
-            tbRefmod = tbRefmod.replace('|-TRANSA_CREATION-|', 'req_'+ str(idx) + ' = new("req_' + str(idx) + '", this)' + ';\n\t\t|-TRANSA_CREATION-|')
+            tbRefmod = tbRefmod.replace('|-TRANSA_CREATION-|', 'req_'+ str(idx) + ' = new("req_' + str(idx) + '")' + ';\n\t\t|-TRANSA_CREATION-|')
 
         for idx, uPort in enumerate(self.port_out):
-            tbRefmod = tbRefmod.replace('|-TRANSA_CREATION-|', 'resp_'+ str(idx) + ' = new("resp_' + str(idx) + '", this)' + ';\n\t\t|-TRANSA_CREATION-|')
+            tbRefmod = tbRefmod.replace('|-TRANSA_CREATION-|', 'resp_'+ str(idx) + ' = new("resp_' + str(idx) + '")' + ';\n\t\t|-TRANSA_CREATION-|')
 
         for idx, uPort in enumerate(self.port_in):
             tbRefmod = tbRefmod.replace('|-INPUT_PORT-|', 'uvm_tlm_analysis_fifo #(' + uPort.transaction.name + ') ' + 'from_' + uPort.origin + ';\n\t|-INPUT_PORT-|')
@@ -352,10 +352,10 @@ class Scoreboard:
             tbScoreboard = tbScoreboard.replace('|-PORTS-|', 'uvm_analysis_port #(' + uPort.transaction.name + ') ' + uPort.origin + '_to_' + uPort.direction + ';\n\t|-PORTS-|')
 
         for idx,uRefmod in enumerate(self.refmod):
-            tbScoreboard = tbScoreboard.replace('|-REFMOD_CREATION-|', uRefmod.instance + ' = ' + uRefmod.name + '::create("' + uRefmod.instance + '", this)' +  ';\n\t\t|-REFMOD_CREATION-|')
+            tbScoreboard = tbScoreboard.replace('|-REFMOD_CREATION-|', uRefmod.instance + ' = ' + uRefmod.name + '::type_id::create("' + uRefmod.instance + '", this)' +  ';\n\t\t|-REFMOD_CREATION-|')
 
         for idx,uComp in enumerate(self.comp):
-            tbScoreboard = tbScoreboard.replace('|-COMPARATOR_CREATION-|', uComp.instance + ' = ' + uComp.name + '::create("' + uComp.instance + '", this)' +  ';\n\t\t|-COMPARATOR_CREATION-|')
+            tbScoreboard = tbScoreboard.replace('|-COMPARATOR_CREATION-|', uComp.instance + ' = ' + uComp.name + '::type_id::create("' + uComp.instance + '", this)' +  ';\n\t\t|-COMPARATOR_CREATION-|')
 
         for idx,uPort in enumerate(self.port):
             tbScoreboard = tbScoreboard.replace('|-PORTS_CREATION-|', uPort.origin + '_to_' + uPort.direction + '= new("' + uPort.origin + '_to_' + uPort.direction + '", this)' + ';\n\t\t|-PORTS_CREATION-|')
@@ -368,7 +368,7 @@ class Scoreboard:
             else:
                 for idx,uRefmod in enumerate(self.refmod):
                     if uPort.direction + '_rfm' == uRefmod.instance:
-                        tbScoreboard = tbScoreboard.replace('|-CONNECTIONS-|', uPort.origin + '_to_' + uPort.direction + '.connect(' + uPort.direction + '_rfm.' 'from_' + uPort.origin + ');\n\t\t|-CONNECTIONS-|')
+                        tbScoreboard = tbScoreboard.replace('|-CONNECTIONS-|', uPort.origin + '_to_' + uPort.direction + '.connect(' + uPort.direction + '_rfm.' 'from_' + uPort.origin + '.analysis_export);\n\t\t|-CONNECTIONS-|')
                 for idy,uComp in enumerate(self.comp):
                     if uPort.direction == uComp.instance:
                         tbScoreboard = tbScoreboard.replace('|-CONNECTIONS-|', uPort.origin + '_to_' + uPort.direction + '.connect(' + uPort.direction + '.' 'before_export' + ');\n\t\t|-CONNECTIONS-|')
@@ -458,9 +458,9 @@ class Env:
         tbEnv = tbEnv.replace('|-SCOREBOARD-|', self.scoreboard.name + '_scoreboard ' +  self.scoreboard.instance  + ';\n\t|-SCOREBOARD-|')
 
         for idx,agent in enumerate(self.agent):
-            tbEnv = tbEnv.replace('|-AGENT_CREATION-|', agent.instance + ' = ' + agent.name + '_agent' + '::create("' + agent.instance + '", this)' +  ';\n\t\t|-AGENT_CREATION-|')
+            tbEnv = tbEnv.replace('|-AGENT_CREATION-|', agent.instance + ' = ' + agent.name + '_agent' + '::type_id::create("' + agent.instance + '", this)' +  ';\n\t\t|-AGENT_CREATION-|')
 
-        tbEnv = tbEnv.replace('|-SCOREBOARD_CREATION-|', self.scoreboard.instance + ' = ' + self.scoreboard.name + '_scoreboard' + '::create("' + self.scoreboard.instance + '", this)' +  ';\n\t\t|-SCOREBOARD_CREATION-|')
+        tbEnv = tbEnv.replace('|-SCOREBOARD_CREATION-|', self.scoreboard.instance + ' = ' + self.scoreboard.name + '_scoreboard' + '::type_id::create("' + self.scoreboard.instance + '", this)' +  ';\n\t\t|-SCOREBOARD_CREATION-|')
 
         for idx,uVip in enumerate(self.vip):
             tbEnv = tbEnv.replace('|-VIP-|', uVip.name + ' ' +  uVip.instance + ';\n\t|-VIP-|')
@@ -546,11 +546,11 @@ class Test:
         for idx,sequence in enumerate(self.sequence):
             tbTest = tbTest.replace('|-SEQUENCE-|', sequence.name + ' seq_' + str(idx) + ';\n\t|-SEQUENCE-|')
 
-        tbTest = tbTest.replace('|-ENV_CREATION-|', 'env_h' + ' = ' + self.env.name + '::create("env_h", this)' +  ';\n\t\t|-ENV_CREATION-|')
+        tbTest = tbTest.replace('|-ENV_CREATION-|', 'env_h' + ' = ' + self.env.name + '::type_id::create("env_h", this)' +  ';\n\t\t|-ENV_CREATION-|')
         for idx,sequence in enumerate(self.sequence):
-            tbTest = tbTest.replace('|-SEQUENCE_CREATION-|', 'seq' + str(idx) + ' = ' + sequence.name + '::create("'+ 'seq' + str(idx) +'", this)' +  ';\n\t\t|-SEQUENCE_CREATION-|')
+            tbTest = tbTest.replace('|-SEQUENCE_CREATION-|', 'seq_' + str(idx) + ' = ' + sequence.name + '::type_id::create("'+ 'seq_' + str(idx) +'", this)' +  ';\n\t\t|-SEQUENCE_CREATION-|')
             for agent in sequence.agent:
-                tbTest = tbTest.replace('|-SEQUENCE_START-|', 'seq' + str(idx) + '.start(env_h.' + agent.instance + '.seqr)' + ';\n\t\t|-SEQUENCE_START-|')
+                tbTest = tbTest.replace('|-SEQUENCE_START-|', 'seq_' + str(idx) + '.start(env_h.' + agent.instance + '.sqr)' + ';\n\t\t|-SEQUENCE_START-|')
 
         # CLEANUP
         tbTest = tbTest.replace('|-TEST-|', '')
@@ -657,25 +657,25 @@ class Module:
         for idx,uClock in enumerate(self.clock):
             tbTop = tbTop.replace('|-CLOCK-|', 'logic ' + uClock.name +';\n\t|-CLOCK-|')
             tbTop = tbTop.replace('|-CLOCK_PERIOD-|', 'localparam P_' + uClock.name.upper() + ' = ' + str(uClock.period) +'ns;\n\t|-CLOCK_PERIOD-|')
-            tbTop = tbTop.replace('|-CLOCK_CH-|', 'always #(P_' + uClock.name.upper() + '/2) ~' + uClock.name +';\n\t|-CLOCK_CH-|')
+            tbTop = tbTop.replace('|-CLOCK_CH-|', 'always #(P_' + uClock.name.upper() + '/2)' + uClock.name + '= ~' + uClock.name +';\n\t|-CLOCK_CH-|')
 
         for idx,uReset in enumerate(self.reset):
             tbTop = tbTop.replace('|-RESET-|', 'logic ' + uReset.name +';\n\t\t|-RESET-|')
             tbTop = tbTop.replace('|-RESET_PERIOD-|', 'localparam P_' + uReset.name.upper() + ' = ' + str(uReset.period) + 'ns;\n\t|-RESET_PERIOD-|')
-            tbTop = tbTop.replace('|-RESET_CH-|', 'always \n\t\t#(P_' + uReset.name.upper() + ') ' + uReset.name +' = 0; '+ '\n\t\t#(' + str(uReset.duration) + ') = 1;' +'\n\t|-RESET_CH-|')
+            tbTop = tbTop.replace('|-RESET_CH-|', 'always begin\n\t\t#(P_' + uReset.name.upper() + ') ' + uReset.name +' = 0; '+ '\n\t\t#(' + str(uReset.duration) + ') ' + uReset.name + ' = 1;' +'\n\t|-RESET_CH-|')
 
         for idx, uAgent in enumerate(self.agent):
             tbTop = tbTop.replace('|-INTERFACE-|', uAgent.interface.name + ' ' + uAgent.interface.instance + '_if_top (\n\t\t.' \
             + uAgent.interface.clock.name + '(' + uAgent.interface.clock.name + '), .' + \
             uAgent.interface.reset.name + '(' + uAgent.interface.reset.name + ')\n\t);'+ '\n\t\t|-INTERFACE-|')
-            tbTop = tbTop.replace('|-INTERFACE_CONNECTION-|', '.' + uAgent.interface.instance + '_if_top (' + uAgent.interface.instance + '_if)' +',\n\t\t|-INTERFACE_CONNECTION-|')
+            tbTop = tbTop.replace('|-INTERFACE_CONNECTION-|', '.' + uAgent.interface.instance + '_if (' + uAgent.interface.instance + '_if_top)' +',\n\t\t|-INTERFACE_CONNECTION-|')
 
         for idx, uClock in enumerate(self.clock):
-            tbTop = tbTop.replace('|-INTERFACE_CONNECTION-|', '.' + uClock.name + '.(' + uClock.name + ')' +',\n\t\t|-INTERFACE_CONNECTION-|')
+            tbTop = tbTop.replace('|-INTERFACE_CONNECTION-|', '.' + uClock.name + '(' + uClock.name + ')' +',\n\t\t|-INTERFACE_CONNECTION-|')
             tbTop = tbTop.replace('|-INITIAL_CLOCK-|', uClock.name + ' = 0;' +'\n\t\t|-INITIAL_CLOCK-|')
 
         for idx, uReset in enumerate(self.reset):
-            tbTop = tbTop.replace('|-INTERFACE_CONNECTION-|', '.' + uReset.name + '.(' + uReset.name + ')' +',\n\t\t|-INTERFACE_CONNECTION-|')
+            tbTop = tbTop.replace('|-INTERFACE_CONNECTION-|', '.' + uReset.name + '(' + uReset.name + ')' +',\n\t\t|-INTERFACE_CONNECTION-|')
             tbTop = tbTop.replace('|-INITIAL_RESET-|', uReset.name + ' = 1;' +'\n\t\t|-INITIAL_RESET-|')
 
         for idx, uAgent in enumerate(self.agent):
@@ -741,7 +741,7 @@ class Module:
         aux_files = []
         for idx, uAgent in enumerate(self.agent):
             if uAgent.interface.name not in aux_files:
-                tbMakefile = tbMakefile.replace('|-INTERFACE-|', '../tb/' + uAgent.interface.name + '_if.sv \ \n\t|-INTERFACE-|')
+                tbMakefile = tbMakefile.replace('|-INTERFACE-|', '../../tb/' + uAgent.interface.name + '.sv \ \n\t|-INTERFACE-|')
 
             aux_files.append(uAgent.interface.name)
         
@@ -750,10 +750,11 @@ class Module:
                 tbMakefile = tbMakefile.replace('|-INTERFACE-|', uInclude +' \ \n\t|-INTERFACE-|')
 
         test_string = """|-TEST-|:
-    @xrun -64bit -uvm  +incdir+$(RTL_SRC) $(PKGS) $(IF) $(RTL) $(WRAPPER) top.sv +UVM_TESTNAME=|-TEST-| -covtest |-TEST-|-$(SEED) -svseed $(SEED) -defparam top.min_cover=$(COVER) -defparam top.min_transa=$(TRANSA) $(RUN_ARGS_COMMON) --xmlibdirpath workspace/rtlsim ../ $(RUN_ARGS)"""
+\t@xrun -64bit -uvm  +incdir+$(RTL_SRC) $(PKGS) $(IF) $(RTL) $(WRAPPER) ../../tb/|-MODULE-|_top.sv +UVM_TESTNAME=|-TEST-| -covtest |-TEST-|-$(SEED) -svseed $(SEED) -defparam top.min_cover=$(COVER) -defparam top.min_transa=$(TRANSA) $(RUN_ARGS_COMMON) -xmlibdirpath ../../workspace/rtlsim $(RUN_ARGS)"""
 
         for idx, uTest in enumerate(self.test):
             aux_string = test_string.replace('|-TEST-|', uTest.name)
+            aux_string = test_string.replace('|-MODULE-|', self.name)
             tbMakefile = tbMakefile.replace('|-TEST-|', aux_string + '\n\n|-TEST-|')
 
 
@@ -826,7 +827,7 @@ endpackage""".format(MODULE=self.name)
 
         for filename in f:
             if '_top.sv' not in filename and '_wrapper.sv' not in filename and '_interface.sv' not in filename:
-                pkg = pkg.replace('|-FILES-|', '`include "' + filename +'"\n\t|-FILES-|')
+                pkg = pkg.replace('|-FILES-|', '`include ../../tb/"' + filename +'"\n\t|-FILES-|')
 
         for uVip in self.vip:
             import_name = uVip.file_package.replace('.sv', '')
@@ -864,13 +865,13 @@ class Formal:
         tbVMod = tbVMod.replace('|-MODULE-|', self.name)
 
         for idx,uClock in enumerate(self.clock):
-            tbVMod = tbVMod.replace('|-SIGNALS-|', 'input ' + uClock.name +',\n\t\t|-SIGNALS-|')
+            tbVMod = tbVMod.replace('|-SIGNALS-|', 'input logic' + uClock.name +',\n\t\t|-SIGNALS-|')
 
         for idx,uReset in enumerate(self.reset):
-            tbVMod = tbVMod.replace('|-SIGNALS-|', 'input ' + uReset.name +',\n\t\t|-SIGNALS-|')
+            tbVMod = tbVMod.replace('|-SIGNALS-|', 'input logic' + uReset.name +',\n\t\t|-SIGNALS-|')
 
         for uSignal in self.signal:
-            tbVMod = tbVMod.replace('|-SIGNALS-|', 'input' + ' ' + uSignal.type.replace('logic','') + ' ' + uSignal.name + ',\n\t\t|-SIGNALS-|')
+            tbVMod = tbVMod.replace('|-SIGNALS-|', 'input' + ' ' + uSignal.type + ' ' + uSignal.name + ',\n\t\t|-SIGNALS-|')
 
 
         tbVMod = tbVMod.replace(',\n\t\t|-SIGNALS-|', '')

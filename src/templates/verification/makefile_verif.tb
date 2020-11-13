@@ -1,10 +1,10 @@
 RTL_SRC = ../../frontend/rtl/src/
-WRAPPER = ../tb/|-MODULE-|_wrapper.sv
+WRAPPER = ../../tb/|-MODULE-|_wrapper.sv
 
 IF = |-INTERFACE-|
 RTL := $(shell find $(RTL_SRC) -name '*.sv')
 REFMOD =
-PKGS = ../tb/|-MODULE-|_pkg.sv
+PKGS = ../../tb/|-MODULE-|_pkg.sv
 
 SEED = 100
 COVER = 100

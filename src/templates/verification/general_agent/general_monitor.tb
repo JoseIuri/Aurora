@@ -23,40 +23,39 @@ class |-AGENT-|_monitor extends uvm_monitor;
         super.new(name, parent);
         this.transCollected = |-TRANSACTION-|::type_id::create("transCollected");
 
-        this.tID = get_type_name().toupper();
+        this.tID = get_type_name();
         this.req = new("req", this);
         this.resp = new("resp", this);
     endfunction: new
 
-    function build_phase(uvm_phase phase);
+    virtual function function void build_phase(uvm_phase phase);
         super.build_phase(phase);
         `uvm_info(tID, $sformatf("build_phase begin ..."), UVM_HIGH)
-        if (!(uvm_config_db#(virtual |-INTERFACE-|)::get(this, "", "VIRTUAL_IF", |INTERFACE_INSTANCE|_vif))) begin
+        if (!(uvm_config_db#(virtual |-INTERFACE-|)::get(this, "", "VIRTUAL_IF", |-INTERFACE_INSTANCE-|_vif))) begin
             `uvm_fatal("NOVIF", {"virtual interface must be set for: ", get_full_name(), ".|-INTERFACE_INSTANCE-|_vif"})
         end
 
     endfunction : build_phase
 
-    task run_phase(uvm_phase phase);
+    virtual task run_phase(uvm_phase phase);
+        super.run_phase(phase);
         this.CollectTransactions(phase); // collector task
     endtask: run_phase
 
     task CollectTransactions(uvm_phase phase);
 
         forever begin
-            phase.raise_objection(this);
 
             this.BusToTransaction();
 
             this.req.write(transCollected);
             this.resp.write(transCollected);
 
-            phase.drop_objection(this);
         end
     endtask : CollectTransactions
 
-    function void BusToTransaction();
+    task BusToTransaction();
         |-MONITOR_POLICY-|
-    endfunction : BusToTransaction
+    endtask : BusToTransaction
 
 endclass: |-AGENT-|_monitor
